@@ -13,31 +13,34 @@
 %skeleton "lalr1.cc"
 
 %union{
-	int ival;
-	float fval;
-	char *sval;
-	int ikey;	//int keyword
-	int fkey;	//float keyword
-	int skey;	//string keyword
-	int ifkey;
-	int ekey;
-	int wkey;
-	int
+	int int_val;
+	float float_val;
+	char *string_val;
+	int int_key;	
+	int float_key;
+	int id_key;
+	int string_key;
+	int if_key;
+	int else_key;
+	int while_key;
+	int read_key;
+	int write_key;
+	int return_key;
 	
 }
 
-%token <ival> INT_LIT
-%token <fval> FLOAT_LIT
-%token <sval> STRING_LIT
-%token int					
-%token float				
-%token ID
-%token if
-%token else
-%token while
-%token read
-%token write
-%token return
+%token <int_val> 	INT_LIT
+%token <float_val> 	FLOAT_LIT
+%token <string_val> STRING_LIT
+%token <int_key> 	int					
+%token <float_key> 	float				
+%token <id_key>		ID
+%token <if_key> 	if
+%token <else_key>	else
+%token <while_key>	while
+%token <read_key>	read
+%token <write_key>	write
+%token <return_key>	return
 %%
 	program: { function-def | decl | function-decl }
 	decl: kind var-list ';'
