@@ -8,6 +8,8 @@
 	extern "C" FILE *yyin;
 %}
 
+%define parse.error verbose
+
 %union{
 	int ival;
 	float fval;
@@ -35,20 +37,20 @@ program: %empty
 | program decl 
 | program function-decl 
 
-decl: kind var-list ';'
+decl: kind var-list SEMICOLON
 
 kind: "int" | "float"
 
 var-list: ID var-list-opt
 
 var-list-opt: %empty
-| var-list ',' ID 
+| var-list COMMA ID 
 
-function-decl: kind ID '(' kind ')' ';'
+function-decl: kind ID LPAR kind RPAR SEMICOLON
 
-function-def: kind ID '(' kind ')' body
+function-def: kind ID LPAR kind RPAR body
 
-body: '{' body-decl body-stmt '}'
+body: LBRACE body-decl body-stmt RBRACE
 
 body-decl: %empty
 | body-decl decl 
@@ -56,12 +58,12 @@ body-decl: %empty
 body-stmt: %empty
 | body-stmt stmt
 
-stmt: expr ';'
-| "if" '(' bool-expr ')' stmt else-stmt
-| "while" '(' bool-expr ')' stmt
-| "read" var-list ';'
-| "write" write-expr-list ';'
-| "return" expr ';'
+stmt: expr SEMICOLON
+| "if" LPAR bool-expr RPAR stmt else-stmt
+| "while" LPAR bool-expr RPAR stmt
+| "read" var-list SEMICOLON
+| "write" write-expr-list SEMICOLON
+| "return" expr SEMICOLON
 
 else-stmt: %empty
 | "else" stmt
@@ -69,7 +71,7 @@ else-stmt: %empty
 write-expr-list: wel-group wel-optional 
 
 wel-optional: %empty
-| wel-optional ',' wel-group
+| wel-optional COMMA wel-group
 
 wel-group: expr | STRING_LIT
 
@@ -77,11 +79,11 @@ factor: ID
 | INT_LIT { std::cout << "found int: " << $1 << '\n'; } 
 | FLOAT_LIT 
 | function-call
-| '(' expr ')'
+| LPAR expr RPAR
 
 bool-expr: expr bool-op expr
 
-function-call: ID '(' expr ')'
+function-call: ID LPAR expr RPAR
 
 term: '-' factor term-mulop  	/*	Modified rule */
 
@@ -93,13 +95,13 @@ expr1: term expr1-addop
 expr1-addop: %empty
 | expr1-addop addop term
 
-mulop: '*' | '/'
+mulop: OP_MULT | OP_DIV
 
-addop: '+' | '-'
+addop: OP_PLUS | OP_MINUS
 
-bool-op: '<' | '>' | "==" | ">=" | "<="
+bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
 
-expr: ID '=' expr | expr1
+expr: ID OP_ASSIGN expr | expr1
 
 %%
 
@@ -114,12 +116,12 @@ int main(int argc, char** argv){
     
     yyin = fp;
 	do{
-		std::cout << "FOund tok: " << yyparse() << '\n';
+		std::cout << "Found tok: " << yyparse() << '\n';
 	} while(!feof(yyin));
 }
 
 int yyerror(const char* c){
-	std::cout << "Error: " << c << '\n';
+	std::cout << "|Error: " << c << "|\n";
 	exit(1);
     return 1;
 }
