@@ -13,9 +13,9 @@
 #include <iostream> 
 
 char op_name[20];
-int line_no = 1;
 char *skip;
 int mylength;
+extern int line_no;
 
 %}
 
@@ -33,8 +33,8 @@ int mylength;
 <comment>"*"+"/"	   BEGIN(INITIAL);
 
  /* tokens */
-"int"			return(KW_INT);
-"float"			return(KW_FLOAT);
+"int"			{ table.decl_type("int"); return KW_INT; } 
+"float"			{ table.decl_typre("float"); return KW_FLOAT; } 
 "if"			return(KW_IF);
 "else"			return(KW_ELSE);
 "while"			return(KW_WHILE);
@@ -53,8 +53,8 @@ int mylength;
 ">="                    return(OP_GE); /* greater than or equal */
 "("                     return(LPAR);
 ")"                     return(RPAR);
-"{"                     return(LBRACE);
-"}"                     return(RBRACE);
+"{"                     { ++table; return LBRACE; } 
+"}"                     { --table; return RBRACE; } 
 ";"                     return(SEMICOLON);
 ","                     return(COMMA);
 [a-zA-Z_][a-zA-Z_0-9]*  { 

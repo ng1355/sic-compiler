@@ -6,6 +6,9 @@
 	int yyparse();
     int yyerror(const char* c);
 	extern "C" FILE *yyin;
+
+    int line_no = 1;
+    token_table table; 
 %}
 
 %define parse.error verbose
@@ -34,36 +37,36 @@
 %%
 
 program: %empty 
-| program function-def { puts("program function-def"); }
-| program decl         { puts("program decl"); }
-| program function-decl { puts("program function-decl"); } 
+| program function-def
+| program decl         
+| program function-decl
 ;
 
-decl: kind var-list SEMICOLON { puts ("kind var-list ;"); }
+decl: kind var-list SEMICOLON
 ;
 
-kind: "int" | "float" { puts("int | float"); }
+kind: "int" { table.decl_type(yytext); $$ = $1; } 
+| "float" { table.decl_type(yytext); $$ = $1; }
 ;
 
-var-list: ID var-list-opt { std::cout << "varlist: " << $1 << '\n'; }
+var-list: ID var-list-opt { table.addvar($1); } 
 ;
 
 var-list-opt: %empty
-| var-list-opt COMMA ID  { std::cout << "var-list-opt COMMA " << $3 << '\n'; }
+| var-list-opt COMMA ID { table.addvar($3); } 
 ;
 
-function-decl: kind ID LPAR kind RPAR SEMICOLON {std::cout << "Function decl name: " << $2 << '\n'; } 
+function-decl: kind ID LPAR kind RPAR SEMICOLON { table.addfunc($2, $4, line_no); }
 ;
 
-function-def: kind ID LPAR kind ID RPAR body { std::cout << "kind" << $2 << \
-                "LPAR kind " << $5 << "RPAR body\n"; }
+function-def: kind ID LPAR kind ID RPAR body { table.definefunc($2, $4, line_no); }
 ;
 
-body: LBRACE body-decl body-stmt RBRACE { puts("{ body-decl body-stmt }"); }
+body: LBRACE body-decl body-stmt RBRACE
 ;
 
 body-decl: %empty
-| body-decl decl  
+| body-decl decl 
 ;
 
 body-stmt: %empty
@@ -71,42 +74,41 @@ body-stmt: %empty
 ;
 
 stmt: expr SEMICOLON
-| "if" LPAR bool-expr RPAR stmt "else" stmt{ puts("if"); }
-| "if" LPAR bool-expr RPAR stmt { puts("if"); }
+| "if" LPAR bool-expr RPAR stmt "else" stmt 
+| "if" LPAR bool-expr RPAR stmt 
 /* unofficial while-stmt that accepts bodies in addition to statement */ 
-| "while" LPAR bool-expr RPAR while-stmt { puts("while"); } 
-| "read" var-list SEMICOLON { puts("read"); } 
-| "write" write-expr-list SEMICOLON { puts("write"); }
-| "return" expr SEMICOLON { puts("return"); }
+| "while" LPAR bool-expr RPAR while-stmt
+| "read" var-list SEMICOLON
+| "write" write-expr-list SEMICOLON
+| "return" expr SEMICOLON
 ;
 
 while-stmt: body
 | stmt
 ;
 
-write-expr-list: wel-group wel-optional  { puts("write-expr-list"); }
+write-expr-list: wel-group wel-optional
 ;
 
 wel-optional: %empty
-| wel-optional COMMA wel-group { puts("wel-optional"); }
+| wel-optional COMMA wel-group
 ;
 
-wel-group: expr { puts("expr"); }
-| STRING_LIT { std::cout << "STRING_LIT value: " << $1 << '\n'; }
-/* unofficial var-list for comma delimited IDs */ 
+wel-group: expr
+| STRING_LIT
 ;
 
-factor: ID { std::cout << "found ID: " << $1 << '\n'; }
-| INT_LIT { std::cout << "found int: " << $1 << '\n'; } 
-| FLOAT_LIT { std::cout << "found float: " << $1 << '\n'; }
-| function-call { std::cout << "function-call in factor\n"; }
-| LPAR expr RPAR { puts("LPAR expr RPAR"); }
+factor: ID
+| INT_LIT
+| FLOAT_LIT
+| function-call
+| LPAR expr RPAR
 ;
 
-bool-expr: expr bool-op expr { puts("bool-expr"); }
+bool-expr: expr bool-op expr
 ;
 
-function-call: ID LPAR expr RPAR { puts("function-call"); }
+function-call: ID LPAR expr RPAR
 ;
 
 term:  addop factor term-mulop 
@@ -114,7 +116,7 @@ term:  addop factor term-mulop
 ;
 
 term-mulop: %empty 
-| term-mulop mulop addop factor { puts("term-mulop"); }
+| term-mulop mulop addop factor
 | term-mulop mulop factor
 ;
 
@@ -134,7 +136,7 @@ addop: OP_PLUS | OP_MINUS
 bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
 ;
 
-expr: ID OP_ASSIGN expr { std::cout << $1 << " = expr\n"; }
+expr: ID OP_ASSIGN expr
 | expr1
 ;
 %%
@@ -153,9 +155,3 @@ int main(int argc, char** argv){
         yyparse();
 	} while(!feof(yyin));
 }
-/*
-int yyerror(const char* c){
-	std::cout << c << " on line " << yylineno << '\n';
-    return 1;
-}
-*/
