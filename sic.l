@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <iostream> 
 
 char op_name[20];
 int line_no = 1;
@@ -20,6 +21,7 @@ int mylength;
 
 %x comment
 %option noyywrap
+%option yylineno
 
 %%
 
@@ -46,8 +48,8 @@ int mylength;
 "="                     return(OP_ASSIGN);
 "=="                    return(OP_EQ); /* equal */
 "<"                     return(OP_LT); /* less than */
-">"                     return(OP_LE); /* less than or equal */
-"<="                    return(OP_GT); /* greater than */
+">"                     return(OP_GT); /* less than or equal */
+"<="                    return(OP_LE); /* greater than */
 ">="                    return(OP_GE); /* greater than or equal */
 "("                     return(LPAR);
 ")"                     return(RPAR);
@@ -101,13 +103,9 @@ int mylength;
    * things ignored by the compiler, except for counting lines. */
 \n			{ line_no++; /* not a token; add return(NL_TOKEN) for testing */ }
 [\t ]+			{} /* skip white space; add return(WS_TOKEN) for testing. */ 
-
-.			{ /* It's important this appears last.  
-               * Else one-character tokens that appear after this pattern 
-               * will be unrecognized. */
-                          fprintf (stderr,
-				   "Illegal or out of place character '%c (0x%x)' on line %d.\n",
-				   yytext[0], yytext[0], line_no);
-			}
-
 %%
+
+void yyerror(const char *c){
+    std::cout << c << " on line " << line_no << ", matched: " << \
+    yytext << '\n';
+}
