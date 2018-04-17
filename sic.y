@@ -1,4 +1,5 @@
 %{
+    #include "symbol_table.hpp" 
 	#include <iostream>
 	#include <cstdio>
 
@@ -8,21 +9,24 @@
 	extern "C" FILE *yyin;
 
     int line_no = 1;
-    token_table table; 
+    symbol_table table; 
 %}
 
 %define parse.error verbose
 %locations
 
 %union{
-	int ival;
-	float fval;
-	char *sval;
+    int ival;
+    float fval;
+    char *sval;
 }
 
-%token KW_INT "int" KW_FLOAT "float" KW_IF "if" KW_WHILE "while"
-       KW_RETURN "return" KW_READ "read" KW_WRITE "write" KW_ELSE "else" 
-       <sval> ID <ival> INT_LIT <fval> FLOAT_LIT <sval> STRING_LIT  
+%token <ival> KW_INT "int" <ival> KW_FLOAT "float" 
+%token <sval> ID <ival> INT_LIT <fval> FLOAT_LIT <sval> STRING_LIT  
+%type <ival> kind
+%token KW_IF "if" KW_WHILE "while" KW_RETURN "return" KW_READ "read" 
+       KW_WRITE "write" KW_ELSE "else" 
+
 %left OP_PLUS '+' OP_MINUS '-' 
 %left OP_MULT '*' OP_DIV '/' 
 %right OP_ASSIGN '='
@@ -34,6 +38,7 @@
        
 /* temporary ugly fix to silence s/r conflict from dangling-else. 
  * Bison makes the right choice anyway */ 
+ %expect 1
 %%
 
 program: %empty 
@@ -45,21 +50,28 @@ program: %empty
 decl: kind var-list SEMICOLON
 ;
 
-kind: "int" { table.decl_type(yytext); $$ = $1; } 
-| "float" { table.decl_type(yytext); $$ = $1; }
+kind: "int" { table.decl_type("int"); $$ = $1; } 
+| "float" { table.decl_type("float"); $$ = $1; }
 ;
 
-var-list: ID var-list-opt { table.addvar($1); } 
+var-list: ID var-list-opt { table.addvar($1, line_no); } 
 ;
 
 var-list-opt: %empty
-| var-list-opt COMMA ID { table.addvar($3); } 
+| var-list-opt COMMA ID { table.addvar($3, line_no); }
 ;
 
-function-decl: kind ID LPAR kind RPAR SEMICOLON { table.addfunc($2, $4, line_no); }
+function-decl: kind ID LPAR kind RPAR SEMICOLON 
+{ 
+    table.addfunc($2, ($4 ? "float" : "int"), line_no); 
+}
 ;
 
-function-def: kind ID LPAR kind ID RPAR body { table.definefunc($2, $4, line_no); }
+function-def: kind ID LPAR kind ID RPAR 
+{
+    table.definefunc($2, ($4 ? "float" : "int"), line_no);
+}
+body
 ;
 
 body: LBRACE body-decl body-stmt RBRACE
@@ -98,7 +110,7 @@ wel-group: expr
 | STRING_LIT
 ;
 
-factor: ID
+factor: ID //{ table.is_var_init($1, line_no); }
 | INT_LIT
 | FLOAT_LIT
 | function-call
@@ -108,7 +120,7 @@ factor: ID
 bool-expr: expr bool-op expr
 ;
 
-function-call: ID LPAR expr RPAR
+function-call: ID LPAR expr RPAR { table.callfunc($1, line_no); } 
 ;
 
 term:  addop factor term-mulop 
@@ -136,7 +148,7 @@ addop: OP_PLUS | OP_MINUS
 bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
 ;
 
-expr: ID OP_ASSIGN expr
+expr: ID OP_ASSIGN expr // { table.is_var_init($1, line_no); } 
 | expr1
 ;
 %%
@@ -155,3 +167,25 @@ int main(int argc, char** argv){
         yyparse();
 	} while(!feof(yyin));
 }
+/* 
+Sample input: 
+int y;
+int test(int); 
+int inc(int x)
+{
+return x+1;
+}
+float main (float z)
+{ int x;
+x=7+y;
+write inc(x);
+}
+
+output:
+Global int variable y declared in line 1
+Function int test(int) declared in line 2
+Function int inc(int) defined in line 6
+Local int variable x declared in line 8
+Function inc defined in line 6 used in line 10
+Function int main(float) defined in line 11/
+*/

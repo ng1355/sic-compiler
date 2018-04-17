@@ -1,12 +1,9 @@
 %{
-/*
- * tok.l
- *
- * flex input file to generate SiC scanner
- *
- */
 
 #include "sic.tab.h" 
+#include "symbol_table.hpp" 
+
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -16,6 +13,7 @@ char op_name[20];
 char *skip;
 int mylength;
 extern int line_no;
+extern symbol_table table;
 
 %}
 
@@ -33,8 +31,8 @@ extern int line_no;
 <comment>"*"+"/"	   BEGIN(INITIAL);
 
  /* tokens */
-"int"			{ table.decl_type("int"); return KW_INT; } 
-"float"			{ table.decl_typre("float"); return KW_FLOAT; } 
+"int"			{  yylval.ival = 0; return KW_INT; } 
+"float"			{  yylval.ival = 1; return KW_FLOAT; } 
 "if"			return(KW_IF);
 "else"			return(KW_ELSE);
 "while"			return(KW_WHILE);
@@ -53,14 +51,16 @@ extern int line_no;
 ">="                    return(OP_GE); /* greater than or equal */
 "("                     return(LPAR);
 ")"                     return(RPAR);
-"{"                     { ++table; return LBRACE; } 
-"}"                     { --table; return RBRACE; } 
+"{"                     { table.enterScope(); return LBRACE; } 
+"}"                     { table.exitScope(); return RBRACE; } 
 ";"                     return(SEMICOLON);
 ","                     return(COMMA);
+
 [a-zA-Z_][a-zA-Z_0-9]*  { 
-			   yylval.sval=strdup(yytext);
+			   yylval.sval = strdup(yytext); 
 			   return(ID); 
                         }
+
 [0-9]+			{ for (mylength=yyleng, skip=yytext;
 			       *skip =='0';
 			       skip++, mylength--)
@@ -94,8 +94,8 @@ extern int line_no;
 			}
 
 \"[^\"]*\"		{ /* string literal; not in original language description. */
-			   yytext[yyleng-1]='\0';
-			   yylval.sval=strdup(yytext+1);
+               yytext[yyleng - 1] = '\0';
+			   yylval.sval = strdup(yytext + 1);
 			   return(STRING_LIT);
 			}
 
