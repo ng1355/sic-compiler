@@ -1,5 +1,6 @@
 %{
 
+#define register 
 #include "sic.tab.h" 
 #include "symbol_table.hpp" 
 
@@ -51,8 +52,8 @@ extern symbol_table table;
 ">="                    return(OP_GE); /* greater than or equal */
 "("                     return(LPAR);
 ")"                     return(RPAR);
-"{"                     { table.enterScope(); return LBRACE; } 
-"}"                     { table.exitScope(); return RBRACE; } 
+"{"                     return(LBRACE);
+"}"                     return(RBRACE);
 ";"                     return(SEMICOLON);
 ","                     return(COMMA);
 

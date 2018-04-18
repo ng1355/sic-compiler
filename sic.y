@@ -69,9 +69,12 @@ function-decl: kind ID LPAR kind RPAR SEMICOLON
 
 function-def: kind ID LPAR kind ID RPAR 
 {
+    table.enterScope();
     table.definefunc($2, ($4 ? "float" : "int"), line_no);
+    table.decl_type(($4 ? "float" : "int"));
+    table.addvar($5, line_no);
 }
-body
+body { table.exitScope(); } 
 ;
 
 body: LBRACE body-decl body-stmt RBRACE
@@ -110,9 +113,9 @@ wel-group: expr
 | STRING_LIT
 ;
 
-factor: ID //{ table.is_var_init($1, line_no); }
-| INT_LIT
-| FLOAT_LIT
+factor: ID  { $<sval>$ = $1; }
+| INT_LIT   { $<ival>$ = $1; }
+| FLOAT_LIT { $<fval>$ = $1; }
 | function-call
 | LPAR expr RPAR
 ;
@@ -123,16 +126,18 @@ bool-expr: expr bool-op expr
 function-call: ID LPAR expr RPAR { table.callfunc($1, line_no); } 
 ;
 
-term:  addop factor term-mulop 
-| factor term-mulop
+term:  addop factor term-mulop  { table.usevar($<sval>2, line_no); } 
+| factor term-mulop { table.usevar($<sval>1, line_no);  
+std::cout << "lookahead is " << &yylval.sval << '\n';
+}
 ;
 
 term-mulop: %empty 
-| term-mulop mulop addop factor
-| term-mulop mulop factor
+| term-mulop mulop addop factor { table.usevar($<sval>4, line_no); }
+| term-mulop mulop factor {table.usevar($<sval>3, line_no); }
 ;
 
-expr1: term expr1-addop
+expr1: term expr1-addop 
 ;
 
 expr1-addop: %empty
@@ -148,7 +153,7 @@ addop: OP_PLUS | OP_MINUS
 bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
 ;
 
-expr: ID OP_ASSIGN expr // { table.is_var_init($1, line_no); } 
+expr: ID OP_ASSIGN expr { std::cout << "in assign, ID: " << $1 << '\n'; table.usevar($1, line_no); }
 | expr1
 ;
 %%

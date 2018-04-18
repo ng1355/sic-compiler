@@ -1,5 +1,5 @@
 BFLAGS = -vd 
-CPPFLAGS = -std=c++11 -Wno-deprecated
+CPPFLAGS = -std=c++1z -Wno-deprecated -g 
 all: bison flex sic
 
 sic: bison flex

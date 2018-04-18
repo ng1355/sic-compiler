@@ -1,15 +1,31 @@
 #include <unordered_map>
+#include <utility> 
 #include <string>
 #include <iostream>
 
+const int VAR_REDEF = 0;
+const int FUNC_REDECL = 1;
+const int BAD_CALL = 2;
+const int BAD_VAR = 3;
+
+const int VAR_DECL = 0;
+const int LOCAL_VAR_USE = 1;
+const int GLOBAL_VAR_USE = 2;
+const int FUNC_CALL = 3;
+const int FUNC_DEF = 4;
+const int FUNC_DECL = 5;
+
+
 struct token{
-	token();
+    token(); 
     token(  const std::string& type, 
             const std::string& name, 
             const int line,
             const std::string& param = "",
             bool defined = false
          );
+
+    std::string toString() const; 
 
     std::string type;
     std::string name;
@@ -29,6 +45,10 @@ public:
 
     // add either float or int
     void addvar(const std::string& name, const int line_no);
+    
+    // check if a variable has been initialized, first in local,
+    // then in global space 
+    void usevar(const std::string& name, const int line_no);
 
     // used for function DECLERATIONS 
     void addfunc(const std::string& name, 
@@ -43,14 +63,15 @@ public:
                     const int line_no); 
 
     // check if we can call a function by checking if its defined 
-    void callfunc(const std::string& name, const int line_no);
+    void callfunc(const std::string& name, const int line_no) const;
 
-    // check if a variable has been initialized, first in local,
-    // then in global space 
-    void is_var_init(const std::string& name, const int line_no);
 
     void enterScope();
     void exitScope();
+
+    void printError(const int type, const int line_no,
+            const token& tok = token(), const std::string& name = "") const;
+    void printStatus(const int type, const int line_no, const token& tok)const;
 
 private:
     std::unordered_map<std::string, token> local;
