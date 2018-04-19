@@ -1,5 +1,6 @@
 %{
     #include "symbol_table.hpp" 
+    #include <string> 
 	#include <iostream>
 	#include <cstdio>
 
@@ -9,6 +10,11 @@
 	extern "C" FILE *yyin;
 
     int line_no = 1;
+    /* Used to determine the last updated type of "factor."
+     * 's' means "sval" (string - for IDs)
+     * 'i' means "ival" (int - for INT_LIT) 
+     * 'f' means "fval" (float - for FLOAT_LIT) */ 
+    char current_factor; 
     symbol_table table; 
 %}
 
@@ -91,15 +97,15 @@ body-stmt: %empty
 stmt: expr SEMICOLON
 | "if" LPAR bool-expr RPAR stmt "else" stmt 
 | "if" LPAR bool-expr RPAR stmt 
-/* unofficial while-stmt that accepts bodies in addition to statement */ 
-| "while" LPAR bool-expr RPAR while-stmt
+| "while" LPAR bool-expr RPAR stmt
 | "read" var-list SEMICOLON
 | "write" write-expr-list SEMICOLON
 | "return" expr SEMICOLON
+| LBRACE opt-stmt RBRACE
 ;
 
-while-stmt: body
-| stmt
+opt-stmt: %empty
+| opt-stmt stmt
 ;
 
 write-expr-list: wel-group wel-optional
@@ -113,9 +119,9 @@ wel-group: expr
 | STRING_LIT
 ;
 
-factor: ID  { $<sval>$ = $1; }
-| INT_LIT   { $<ival>$ = $1; }
-| FLOAT_LIT { $<fval>$ = $1; }
+factor: ID  { $<sval>$ = $1; current_factor = 's'; }
+| INT_LIT   { $<ival>$ = $1; current_factor = 'i'; }
+| FLOAT_LIT { $<fval>$ = $1; current_factor = 'f'; }
 | function-call
 | LPAR expr RPAR
 ;
@@ -126,18 +132,20 @@ bool-expr: expr bool-op expr
 function-call: ID LPAR expr RPAR { table.callfunc($1, line_no); } 
 ;
 
-term:  addop factor term-mulop  { table.usevar($<sval>2, line_no); } 
-| factor term-mulop { table.usevar($<sval>1, line_no);  
-std::cout << "lookahead is " << &yylval.sval << '\n';
-}
+term: addop factor term-mulop 
+    { if(current_factor == 's') table.usevar($<sval>1, line_no); }
+| factor term-mulop 
+    { if(current_factor == 's') table.usevar($<sval>1, line_no); }
 ;
 
 term-mulop: %empty 
-| term-mulop mulop addop factor { table.usevar($<sval>4, line_no); }
-| term-mulop mulop factor {table.usevar($<sval>3, line_no); }
+| term-mulop mulop addop factor 
+    { if(current_factor == 's') table.usevar($<sval>4, line_no); }
+| term-mulop mulop factor 
+    { if(current_factor == 's') table.usevar($<sval>3, line_no); } 
 ;
 
-expr1: term expr1-addop 
+expr1: term expr1-addop
 ;
 
 expr1-addop: %empty
@@ -153,7 +161,7 @@ addop: OP_PLUS | OP_MINUS
 bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
 ;
 
-expr: ID OP_ASSIGN expr { std::cout << "in assign, ID: " << $1 << '\n'; table.usevar($1, line_no); }
+expr: ID OP_ASSIGN expr { table.usevar($1, line_no); }
 | expr1
 ;
 %%

@@ -1,6 +1,6 @@
 %{
 
-#define register 
+#define register  /* Removes deprecated keyword from flex files */ 
 #include "sic.tab.h" 
 #include "symbol_table.hpp" 
 

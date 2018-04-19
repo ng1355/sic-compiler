@@ -51,13 +51,11 @@ void symbol_table::addvar(const std::string& name, const int line_no){
 
 //check if a variable has been initialized
 void symbol_table::usevar(const std::string& name, const int line_no){
-    puts("entering uservar");
     auto it = local.find(name);
     if(it != local.end()) printStatus(LOCAL_VAR_USE, line_no, it->second);
     else if(it = global.find(name); it != global.end()) 
         printStatus(GLOBAL_VAR_USE, line_no, it->second);
     else printError(BAD_VAR, line_no);
-    puts("exiting uservar");
 }
 
 // add a function declaration 
@@ -149,5 +147,4 @@ void symbol_table::printStatus(const int type, const int line_no,
             std::cout << "Function " << tok.toString()
                       << " declared in line " << line_no << '\n';
     }
-    puts("exiting printstats");
 }
