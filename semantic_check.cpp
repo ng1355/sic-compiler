@@ -9,7 +9,7 @@ void operation_check(const char *left, const char *right, symbol_table& table, i
 	string ltype, rtype;
 	ltype = table.getType(left);
 	rtype = table.getType(right);
-	cout << left << ":" << ltype << " " << right << ":" << rtype << endl;
+	//cout << left << ":" << ltype << " " << right << ":" << rtype << endl;
 	if(ltype == rtype) return;
 	cout << "Type error on line " << line << ": Cannot mix " << left << " of type "  << ltype << " and " << right << " of type " << rtype << "\n"; 
 }
