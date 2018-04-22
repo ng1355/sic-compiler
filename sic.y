@@ -200,7 +200,6 @@ bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
 expr: ID OP_ASSIGN expr 
 	{ 
 		table.usevar($1, line_no);
-		std::cout << vlist.size() << " " << ilist.size() << " "  << flist.size() << "\n";
 		for(int i = 0; i < vlist.size(); i++)
 			operation_check($1,vlist[i],table,line_no);
 		for(int i = 0; i < ilist.size(); i++)
