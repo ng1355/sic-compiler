@@ -1,6 +1,6 @@
 %{
     #include "symbol_table.hpp"
-	#include "semantic_check.cpp"
+	#include "semantic_check.cpp" 
     #include <string> 
 	#include <iostream>
 	#include <cstdio>
@@ -16,11 +16,11 @@
      * 's' means "sval" (string - for IDs)
      * 'i' means "ival" (int - for INT_LIT) 
      * 'f' means "fval" (float - for FLOAT_LIT) */ 
-    char current_factor;
+    char current_factor; 
+    symbol_table table;
 	std::vector<char*> vlist;
 	std::vector<int> ilist;
 	std::vector<float> flist;
-    symbol_table table;
 %}
 
 %define parse.error verbose
@@ -52,13 +52,13 @@
  %expect 1
 %%
 
-program: %empty				
-| program function-def 	
-| program decl        		
-| program function-decl		
+program: %empty 
+| program function-def
+| program decl         
+| program function-decl
 ;
 
-decl: kind var-list SEMICOLON 
+decl: kind var-list SEMICOLON
 ;
 
 kind: "int" { table.decl_type("int"); $$ = $1; } 
@@ -81,8 +81,9 @@ function-decl: kind ID LPAR kind RPAR SEMICOLON
 function-def: kind ID LPAR kind ID RPAR 
 {
     table.enterScope();
-    table.decl_type(($4 ? "float" : "int"));
+	table.decl_type(($1 ? "float" : "int"));
     table.definefunc($2, ($4 ? "float" : "int"), line_no);
+    table.decl_type(($4 ? "float" : "int"));
     table.addvar($5, line_no);
 	vlist.clear();
 	ilist.clear();
@@ -130,13 +131,13 @@ wel-group: expr
 factor: ID  
 	{ 
 		$<sval>$ = $1; 
-		current_factor = 's';
+		current_factor = 's'; 
 		vlist.push_back($1);
 	}
 | INT_LIT   
 	{ 
 		$<ival>$ = $1; 
-		current_factor = 'i';
+		current_factor = 'i'; 
 		ilist.push_back($1);
 	}
 | FLOAT_LIT 
@@ -150,31 +151,37 @@ factor: ID
 ;
 
 bool-expr: expr bool-op expr
+	{
+		boolean_check(vlist,ilist,flist,table,line_no);
+		vlist.clear();
+		ilist.clear();
+		flist.clear();	
+	}
 ;
 
 function-call: ID LPAR expr RPAR 
 	{ 
 		table.callfunc($1, line_no); 
-		function_check($1,vlist.back(), table, line_no);
+		function_check($1,vlist.back(),table,line_no);
 		vlist.pop_back();
 		vlist.push_back($1);
 	} 
 ;
 
 term: addop factor term-mulop 
-    { if(current_factor == 's') table.usevar($<sval>2, line_no); }
+    { if(current_factor == 's') table.usevar($<sval>1, line_no); }
 | factor term-mulop 
     { if(current_factor == 's') table.usevar($<sval>1, line_no); }
 ;
 
 term-mulop: %empty 
 | term-mulop mulop addop factor 
-	{ if(current_factor == 's') table.usevar($<sval>4, line_no); }
+    { if(current_factor == 's') table.usevar($<sval>4, line_no); }
 | term-mulop mulop factor 
     { if(current_factor == 's') table.usevar($<sval>3, line_no); } 
 ;
 
-expr1: term expr1-addop 
+expr1: term expr1-addop
 ;
 
 expr1-addop: %empty
@@ -191,14 +198,15 @@ bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
 ;
 
 expr: ID OP_ASSIGN expr 
-	{	
+	{ 
 		table.usevar($1, line_no);
+		std::cout << vlist.size() << " " << ilist.size() << " "  << flist.size() << "\n";
 		for(int i = 0; i < vlist.size(); i++)
-			operation_check($1, vlist[i], table, line_no);
+			operation_check($1,vlist[i],table,line_no);
 		for(int i = 0; i < ilist.size(); i++)
-			operation_check($1, ilist[i], table, line_no);
+			operation_check($1,ilist[i],table,line_no);
 		for(int i = 0; i < flist.size(); i++)
-			operation_check($1, flist[i], table, line_no);
+			operation_check($1,flist[i],table,line_no);
 		vlist.clear();
 		ilist.clear();
 		flist.clear();
