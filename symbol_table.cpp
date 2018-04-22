@@ -23,10 +23,24 @@ std::string token::toString() const {
             type + ' ' + name
             : type + ' ' + name + " (" + param + ") "; 
 }
-    
+
 //-------------------------------
-//  token_table class definitions
+//  oken_table class definitions
 //-------------------------------
+//return the type of a variable/function
+const std::string symbol_table::getType(const std::string& name){
+	//(global.count(name) ? return global[name].type : return local[name].type);
+	if(local.count(name)) return local[name].type;
+	return global[name].type;
+}
+//get the line number where a variable/function was declared
+const int symbol_table::getLine(const std::string& name){
+	if(global.count(name)) return global[name].line;
+	return local[name].line;
+}
+const std::string symbol_table::getparam(const std::string& name){
+	return global[name].param;
+}
 
 // set the current type
 void symbol_table::decl_type(const std::string& type){
@@ -124,7 +138,7 @@ void symbol_table::printStatus(const int type, const int line_no,
     switch(type){
         case VAR_DECL:
             std::cout << (inScope ? "Local " : "Global ") 
-                      << tok.toString() << " variable declared  on line "
+                      << tok.toString() << " variable declared on line "
                       << line_no << '\n';
             break;
         case LOCAL_VAR_USE:

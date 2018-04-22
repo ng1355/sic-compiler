@@ -2,7 +2,7 @@
 
 #define register  /* Removes deprecated keyword from flex files */ 
 #include "sic.tab.h" 
-#include "symbol_table.hpp" 
+#include "symbol_table.hpp"
 
 
 #include <stdlib.h>

@@ -39,8 +39,14 @@ struct token{
 
 class symbol_table{
 public:
+	//return the type of a variable/function
+	const std::string getType(const std::string& name);
+	//return the line a variable/function was declared
+	const int getLine(const std::string& name);
+	//return the parameter of a function
+	const std::string getparam(const std::string& name);
     // type of following variables/ret type for function. useful for 
-    // initialization lists (eg. int a, b, c...) 
+    // initialization lists (eg. int a, b, c...)
     void decl_type(const std::string& type);
 
     // add either float or int
