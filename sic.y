@@ -11,7 +11,6 @@
     int yyerror(const char* c);
 	extern "C" FILE *yyin;
 
-    int line_no = 1;
     /* Used to determine the last updated type of "factor."
      * 's' means "sval" (string - for IDs)
      * 'i' means "ival" (int - for INT_LIT) 
@@ -65,16 +64,16 @@ kind: "int" { table.decl_type("int"); $$ = $1; }
 | "float" { table.decl_type("float"); $$ = $1; }
 ;
 
-var-list: ID var-list-opt { table.addvar($1, line_no); } 
+var-list: ID var-list-opt { table.addvar($1); } 
 ;
 
 var-list-opt: %empty
-| var-list-opt COMMA ID { table.addvar($3, line_no); }
+| var-list-opt COMMA ID { table.addvar($3); }
 ;
 
 function-decl: kind ID LPAR kind RPAR SEMICOLON 
 { 
-    table.addfunc($2, ($4 ? "float" : "int"), line_no); 
+    table.addfunc($2, ($4 ? "float" : "int")); 
 }
 ;
 
@@ -82,9 +81,9 @@ function-def: kind ID LPAR kind ID RPAR
 {
     table.enterScope();
 	table.decl_type(($1 ? "float" : "int"));
-    table.definefunc($2, ($4 ? "float" : "int"), line_no);
+    table.definefunc($2, ($4 ? "float" : "int"));
     table.decl_type(($4 ? "float" : "int"));
-    table.addvar($5, line_no);
+    table.addvar($5);
 	vlist.clear();
 	ilist.clear();
 	flist.clear();
@@ -152,7 +151,7 @@ factor: ID
 
 bool-expr: expr bool-op expr
 	{
-		boolean_check(vlist,ilist,flist,table,line_no);
+		boolean_check(vlist,ilist,flist,table);
 		vlist.clear();
 		ilist.clear();
 		flist.clear();	
@@ -161,24 +160,24 @@ bool-expr: expr bool-op expr
 
 function-call: ID LPAR expr RPAR 
 	{ 
-		table.callfunc($1, line_no); 
-		function_check($1,vlist.back(),table,line_no);
+		table.callfunc($1); 
+		function_check($1,vlist.back(),table);
 		vlist.pop_back();
 		vlist.push_back($1);
 	} 
 ;
 
 term: addop factor term-mulop 
-    { if(current_factor == 's') table.usevar($<sval>1, line_no); }
+    { if(current_factor == 's') table.usevar($<sval>1); }
 | factor term-mulop 
-    { if(current_factor == 's') table.usevar($<sval>1, line_no); }
+    { if(current_factor == 's') table.usevar($<sval>1); }
 ;
 
 term-mulop: %empty 
 | term-mulop mulop addop factor 
-    { if(current_factor == 's') table.usevar($<sval>4, line_no); }
+    { if(current_factor == 's') table.usevar($<sval>4); }
 | term-mulop mulop factor 
-    { if(current_factor == 's') table.usevar($<sval>3, line_no); } 
+    { if(current_factor == 's') table.usevar($<sval>3); } 
 ;
 
 expr1: term expr1-addop
@@ -199,13 +198,13 @@ bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
 
 expr: ID OP_ASSIGN expr 
 	{ 
-		table.usevar($1, line_no);
+		table.usevar($1);
 		for(int i = 0; i < vlist.size(); i++)
-			operation_check($1,vlist[i],table,line_no);
+			operation_check($1,vlist[i],table);
 		for(int i = 0; i < ilist.size(); i++)
-			operation_check($1,ilist[i],table,line_no);
+			operation_check($1,ilist[i],table);
 		for(int i = 0; i < flist.size(); i++)
-			operation_check($1,flist[i],table,line_no);
+			operation_check($1,flist[i],table);
 		vlist.clear();
 		ilist.clear();
 		flist.clear();

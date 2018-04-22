@@ -22,7 +22,7 @@ struct token{
             const std::string& name, 
             const int line,
             const std::string& param = "",
-            bool defined = false
+            const bool defined = false
          );
 
     std::string toString() const; 
@@ -33,6 +33,7 @@ struct token{
 
     /* below members are just for functions */ 
     std::string param;
+    bool isFunc; 
     bool defined;  /* prevents function redefinition */ 
 };
 
@@ -40,48 +41,52 @@ struct token{
 class symbol_table{
 public:
 	//return the type of a variable/function
-	const std::string getType(const std::string& name);
+	std::string getType(const std::string& name);
 	//return the line a variable/function was declared
-	const int getLine(const std::string& name);
+	int getLine(const std::string& name);
 	//return the parameter of a function
-	const std::string getparam(const std::string& name);
+	std::string getparam(const std::string& name);
     // type of following variables/ret type for function. useful for 
     // initialization lists (eg. int a, b, c...)
     void decl_type(const std::string& type);
 
     // add either float or int
-    void addvar(const std::string& name, const int line_no);
+    void addvar(const std::string& name);
     
     // check if a variable has been initialized, first in local,
     // then in global space 
-    void usevar(const std::string& name, const int line_no);
+    void usevar(const std::string& name);
 
     // used for function DECLERATIONS 
     void addfunc(const std::string& name, 
                  const std::string& param, 
-                 const int line_no, 
-                 const bool defined = false
-                );
+                 const bool defined = false);
 
     // used for function DEFINITIONS 
-    void definefunc(const std::string& name, 
-                    const std::string& param, 
-                    const int line_no); 
+    void definefunc(const std::string& name, const std::string& param);
+                    
 
     // check if we can call a function by checking if its defined 
-    void callfunc(const std::string& name, const int line_no) const;
-
+    // returns false if called function was not a function
+    void callfunc(const std::string& name) const;
 
     void enterScope();
     void exitScope();
 
-    void printError(const int type, const int line_no,
-            const token& tok = token(), const std::string& name = "") const;
-    void printStatus(const int type, const int line_no, const token& tok)const;
+    void printError(const int type, const token& tok = token(),
+                    const std::string& name = "") const;
+    void printStatus(const int type, const token& tok) const;
+
+    // increment line number
+    void operator ++ ();
+    int  getlineno() const;
+    // non-modifyngly retrieve token if it exists
+    void operator [] (const std::string& name);
 
 private:
     std::unordered_map<std::string, token> local;
     std::unordered_map<std::string, token> global;
     std::string current_type; 
-    bool inScope; 
+    bool inScope = false;
+    int line_no  = 1;
 };

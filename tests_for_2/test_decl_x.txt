@@ -5,6 +5,7 @@ int y;
 int y; /* redeclaring y */
 float y; /* redeclaring y with different type */
 
+int inc(int); /* decleration for function at bottom */ 
 int i2i (int);
 float i2f(int);
 

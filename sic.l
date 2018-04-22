@@ -13,7 +13,6 @@
 char op_name[20];
 char *skip;
 int mylength;
-extern int line_no;
 extern symbol_table table;
 
 %}
@@ -28,7 +27,7 @@ extern symbol_table table;
 "/*"		BEGIN(comment);
 <comment>[^*\n]*	   /* eat anything that's not a '*' */
 <comment>"*"+[^*/\n]*   /* eat up '*'s not followed by '/'s */
-<comment>\n		   ++line_no;
+<comment>\n		   ++table;
 <comment>"*"+"/"	   BEGIN(INITIAL);
 
  /* tokens */
@@ -71,7 +70,7 @@ extern symbol_table table;
 			      fprintf(stderr,
 				      "Suspiciously large interger literal %s in line %d. "
                       "Replacing by 0.\n",
-				      skip, line_no);
+				      skip, table.getlineno());
 			      yylval.ival=0;
 			    }
 			  else 
@@ -88,7 +87,7 @@ extern symbol_table table;
 			      fprintf(stderr,
 				      "Suspiciously long float literal %s in line %d. " 
                       "Replacing by 0.0.\n",
-				      skip, line_no);
+				      skip, table.getlineno());
 			      yylval.fval=0;
 			    }
 			  return (FLOAT_LIT);
@@ -102,11 +101,11 @@ extern symbol_table table;
 
   /* The ones below are not really tokens, but 
    * things ignored by the compiler, except for counting lines. */
-\n			{ line_no++; /* not a token; add return(NL_TOKEN) for testing */ }
+\n			{ ++table; /* not a token; add return(NL_TOKEN) for testing */ }
 [\t ]+			{} /* skip white space; add return(WS_TOKEN) for testing. */ 
 %%
 
 void yyerror(const char *c){
-    std::cout << c << " on line " << line_no << ", matched: " << \
+    std::cout << c << " on line " << table.getlineno() << ", matched: " <<
     yytext << '\n';
 }
