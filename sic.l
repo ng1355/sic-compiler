@@ -1,4 +1,5 @@
 %{
+// sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
 
 #define register  /* Removes deprecated keyword from flex files */ 
 #include "sic.tab.h" 

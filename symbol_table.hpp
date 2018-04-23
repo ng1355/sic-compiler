@@ -1,3 +1,5 @@
+// sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
+
 #include <unordered_map>
 #include <utility> 
 #include <string>

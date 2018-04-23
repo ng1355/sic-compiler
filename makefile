@@ -1,3 +1,4 @@
+#sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
 BFLAGS = -vd 
 CPPFLAGS = -std=c++1z -Wno-deprecated -g 
 all: bison flex sic

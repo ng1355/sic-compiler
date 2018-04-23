@@ -1,4 +1,6 @@
 %{
+    // sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
+
     #include "symbol_table.hpp"
 	#include "semantic_check.cpp" 
     #include <string> 
