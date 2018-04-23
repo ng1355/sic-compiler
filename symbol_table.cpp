@@ -9,18 +9,19 @@ token::token() = default;
 token::token(   const std::string& type, 
                 const std::string& name, 
                 const int line,
+                const bool isFunc,
                 const std::string& param,
                 const bool defined
             ):   
 		     type(type), 
              name(name), 
              line(line), 
+             isFunc(isFunc),
              param(param),
-             isFunc(param.empty()),
              defined(defined) {}
 
 std::string token::toString() const {
-    return (param.empty()) ? 
+    return (!isFunc) ? 
             type + ' ' + name
             : type + ' ' + name + " (" + param + ") "; 
 }
@@ -70,9 +71,14 @@ void symbol_table::addvar(const std::string& name){
 void symbol_table::usevar(const std::string& name){
     auto it = local.find(name);
     if(it != local.end()) printStatus(LOCAL_VAR_USE, it->second);
-    else if(it = global.find(name); it != global.end()) 
+    else if(it = global.find(name); it != global.end()){
+        if(it->second.isFunc){ 
+            printError(USE_FUNC_AS_VAR, it->second,  name); 
+            return; 
+        }
         printStatus(GLOBAL_VAR_USE, it->second);
-    else printError(BAD_VAR);
+    }
+    else printError(BAD_VAR, token(), name);
 }
 
 // add a function declaration 
@@ -81,7 +87,7 @@ void symbol_table::addfunc( const std::string& name,
                             const bool defined)
 {
     auto [ it, added ] = 
-        global.emplace(name, token{current_type, name, line_no, param, defined});
+        global.emplace(name, token{current_type, name, line_no, true, param, defined});
     if(!added) printError(FUNC_REDECL, it->second);
     else if(defined) printStatus(FUNC_DEF, it->second);
     else printStatus(FUNC_DECL, it->second);
@@ -96,8 +102,13 @@ void symbol_table::definefunc(  const std::string& name,
 // check if a function is defined 
 void symbol_table::callfunc(const std::string& name) const {
     auto it = global.find(name);
-    if(it != global.end()) printStatus(FUNC_CALL, it->second);
-	else printError(BAD_CALL); 
+    if(it != global.end()){ 
+        if(!it->second.isFunc){ 
+            printError(USE_VAR_AS_FUNC, it->second, name); 
+            return; 
+        }
+        printStatus(FUNC_CALL, it->second);
+    } else printError(BAD_CALL); 
 }
 
 void symbol_table::enterScope(){
@@ -114,22 +125,27 @@ void symbol_table::printError(const int type, const token& tok,
 {
     switch(type){
         case VAR_REDEF:
-            std::cerr  << "Error: " << (inScope ? " local" : " global")
+            std::cerr  << "Error:" << line_no << ':' 
+                       << (inScope ? " local" : " global")
                        << " variable " << tok.toString()
-                       << " declared on line " << line_no
                        << " already declared on line " << tok.line << '\n';
             break;
         case FUNC_REDECL:
-            std::cerr  << "Error: function " << tok.toString()
-                       << (tok.defined ? " defined" : " declared")
-                       << " on line " << line_no
+            std::cerr  << "Error:" << line_no << ": function " 
+                       << tok.toString()
                        << " already declared on line " << tok.line << '\n';
             break;
         case BAD_CALL:
         case BAD_VAR:
-            std::cerr  << "Error: unknown "
+            std::cerr  << "Error:" << line_no << ": unknown "
                        << ((type == BAD_VAR) ? "variable " : "function ")
-                       << name << " referenced on line " << line_no << '\n';
+                       << name << '\n';
+        case USE_VAR_AS_FUNC:
+            std::cerr  << "Error:" << line_no << ": trying to use variable "
+                       << name << " as a function\n";
+        case USE_FUNC_AS_VAR:
+            std::cerr << "Error:" << line_no << ": try to use function "
+                      << name << " as a variable\n";
     }
 }
 

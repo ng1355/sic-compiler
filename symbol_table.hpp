@@ -7,6 +7,8 @@ const int VAR_REDEF = 0;
 const int FUNC_REDECL = 1;
 const int BAD_CALL = 2;
 const int BAD_VAR = 3;
+const int USE_FUNC_AS_VAR = 4;
+const int USE_VAR_AS_FUNC = 5;
 
 const int VAR_DECL = 0;
 const int LOCAL_VAR_USE = 1;
@@ -21,6 +23,7 @@ struct token{
     token(  const std::string& type, 
             const std::string& name, 
             const int line,
+            const bool isFunc = false, 
             const std::string& param = "",
             const bool defined = false
          );
@@ -32,8 +35,8 @@ struct token{
     int line; 
 
     /* below members are just for functions */ 
-    std::string param;
     bool isFunc; 
+    std::string param;
     bool defined;  /* prevents function redefinition */ 
 };
 
