@@ -5,6 +5,9 @@
 #include <vector>
 #include <cmath>
 
+extern char current_factor; 
+extern int ret_type; 
+
 //Checks to make sure that 2 variables are of the same type
 void operation_check(const char *left, const char *right, symbol_table& table){
 	std::string ltype, rtype;
@@ -44,6 +47,17 @@ void function_check(const char *func, const char *param, symbol_table& table){
 	std::cout << "Type error on line " << line << ": Function " << func 
               << " expected " << param_type << " but instead recieved " 
               << var_type << "\n";
+}
+
+/* 0: int 1: float */
+static char ret_check[] = { 'i', 'f' };
+
+/* checks if what's being returned agrees with the function's return type.
+ * Currently relies on globals too much... */ 
+void return_check(const symbol_table& t){
+    if(ret_check[ret_type] != current_factor)
+        std::cerr << "Type error on line " << t.getlineno()
+                  << ": return statement does not match function return type\n";
 }
 
 //check to make sure that boolean values are calculated using the same types

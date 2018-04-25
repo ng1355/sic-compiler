@@ -18,6 +18,7 @@
      * 'i' means "ival" (int - for INT_LIT) 
      * 'f' means "fval" (float - for FLOAT_LIT) */ 
     char current_factor; 
+    int ret_type; 
     symbol_table table;
 	std::vector<char*> vlist;
 	std::vector<int> ilist;
@@ -82,6 +83,7 @@ function-decl: kind ID LPAR kind RPAR SEMICOLON
 function-def: kind ID LPAR kind ID RPAR 
 {
     table.enterScope();
+    ret_type = $1; 
 	table.decl_type(($1 ? "float" : "int"));
     table.definefunc($2, ($4 ? "float" : "int"));
     table.decl_type(($4 ? "float" : "int"));
@@ -110,7 +112,7 @@ stmt: expr SEMICOLON
 | "while" LPAR bool-expr RPAR stmt
 | "read" var-list SEMICOLON
 | "write" write-expr-list SEMICOLON
-| "return" expr SEMICOLON
+| "return" expr SEMICOLON { return_check(table); }
 | LBRACE opt-stmt RBRACE
 ;
 
