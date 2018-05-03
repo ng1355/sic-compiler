@@ -1,5 +1,7 @@
 // sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
 
+#pragma once
+
 #include <unordered_map>
 #include <utility> 
 #include <string>

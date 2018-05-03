@@ -4,6 +4,7 @@
 #define register  /* Removes deprecated keyword from flex files */ 
 #include "sic.tab.h" 
 #include "symbol_table.hpp"
+#include "semantic_check.hpp"
 
 
 #include <stdlib.h>
@@ -32,30 +33,30 @@ extern symbol_table table;
 <comment>"*"+"/"	   BEGIN(INITIAL);
 
  /* tokens */
-"int"			{  yylval.ival = 0; return KW_INT; } 
-"float"			{  yylval.ival = 1; return KW_FLOAT; } 
-"if"			return(KW_IF);
-"else"			return(KW_ELSE);
-"while"			return(KW_WHILE);
-"return"		return(KW_RETURN);
-"read"			return(KW_READ);
-"write"			return(KW_WRITE);
-"+"                     return(OP_PLUS);
-"-"                     return(OP_MINUS);
-"*"                     return(OP_MULT);
-"/"                     return(OP_DIV);
-"="                     return(OP_ASSIGN);
-"=="                    return(OP_EQ); /* equal */
-"<"                     return(OP_LT); /* less than */
-">"                     return(OP_GT); /* less than or equal */
-"<="                    return(OP_LE); /* greater than */
-">="                    return(OP_GE); /* greater than or equal */
-"("                     return(LPAR);
-")"                     return(RPAR);
-"{"                     return(LBRACE);
-"}"                     return(RBRACE);
-";"                     return(SEMICOLON);
-","                     return(COMMA);
+"int"			{  strcpy(yylval.kw, "int"); return KW_INT; } 
+"float"			{  strcpy(yylval.kw, "float"); return KW_FLOAT; } 
+"if"	        {  strcpy(yylval.kw, "if"); return KW_IF; } 	
+"else"          {  strcpy(yylval.kw, "else"); return KW_ELSE; } 	
+"while"         {  strcpy(yylval.kw, "while"); return KW_WHILE; } 
+"return"	    {  strcpy(yylval.kw, "return"); return KW_RETURN; } 
+"read"	        {  strcpy(yylval.kw, "read"); return KW_READ; } 
+"write"         {  strcpy(yylval.kw, "write"); return KW_WRITE; } 
+"+"             {  strcpy(yylval.op, "+"); return OP_PLUS; } 
+"-"             {  strcpy(yylval.op, "-"); return OP_MINUS; }
+"*"             {  strcpy(yylval.op, "*"); return OP_MULT; } 
+"/"             {  strcpy(yylval.op, "/"); return OP_DIV; } 
+"="             {  strcpy(yylval.op, "="); return OP_ASSIGN; } 
+"=="            {  strcpy(yylval.op, "=="); return OP_EQ; } 
+"<"            	{  strcpy(yylval.op, "<"); return OP_LT; }
+">"             {  strcpy(yylval.op, ">"); return OP_GT; } 
+"<="            {  strcpy(yylval.op, "<="); return OP_LE; } 
+">="            {  strcpy(yylval.op, ">="); return OP_GE; } 
+"("             {  strcpy(yylval.op, "("); return LPAR; } 
+")"             {  strcpy(yylval.op, ")"); return RPAR; } 
+"{"             {  strcpy(yylval.op, "{"); return LBRACE; } 
+"}"             {  strcpy(yylval.op, "}"); return RBRACE; } 
+";"             {  strcpy(yylval.op, ";"); return SEMICOLON; } 
+","             {  strcpy(yylval.op, ","); return COMMA; } 
 
 [a-zA-Z_][a-zA-Z_0-9]*  { 
 			   yylval.sval = strdup(yytext); 

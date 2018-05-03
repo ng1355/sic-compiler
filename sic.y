@@ -2,7 +2,7 @@
     // sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
 
     #include "symbol_table.hpp"
-	#include "semantic_check.cpp" 
+	#include "semantic_check.hpp" 
     #include <string> 
 	#include <iostream>
 	#include <cstdio>
@@ -18,7 +18,7 @@
      * 'i' means "ival" (int - for INT_LIT) 
      * 'f' means "fval" (float - for FLOAT_LIT) */ 
     char current_factor; 
-    int ret_type; 
+    char ret_type; 
     symbol_table table;
 	std::vector<char*> vlist;
 	std::vector<int> ilist;
@@ -32,17 +32,21 @@
     int ival;
     float fval;
     char *sval;
-    char keyword[7]; /* longest KW is 6 chars (return) */ 
+    char kw[7]; /* longest KW is 6 chars (return) */ 
     char op[3];      /* ops are at most 2 chars */ 
 }
 
 %destructor { free($$); } <sval>  /* sval is always strdup'd */ 
 
-%token <ival> KW_INT "int" <ival> KW_FLOAT "float" 
+/* hold string representations of the keyword */ 
+%token <kw> KW_INT "int" <kw> KW_FLOAT "float" 
+%token <kw> KW_IF "if" KW_WHILE "while" KW_RETURN "return" KW_READ "read" 
+       <kw> KW_WRITE "write" KW_ELSE "else" 
+
+/* hold the actual values of the literals */
 %token <sval> ID <ival> INT_LIT <fval> FLOAT_LIT <sval> STRING_LIT  
-%type <ival> kind
-%token KW_IF "if" KW_WHILE "while" KW_RETURN "return" KW_READ "read" 
-       KW_WRITE "write" KW_ELSE "else" 
+
+%type <kw> kind 
 
 %left OP_PLUS '+' OP_MINUS '-' 
 %left OP_MULT '*' OP_DIV '/' 
@@ -67,8 +71,8 @@ program: %empty
 decl: kind var-list SEMICOLON
 ;
 
-kind: "int" { table.decl_type("int"); $$ = $1; } 
-| "float" { table.decl_type("float"); $$ = $1; }
+kind: "int" { table.decl_type($1); }
+| "float" { table.decl_type($1); }
 ;
 
 var-list: ID var-list-opt { table.addvar($1); } 
@@ -80,17 +84,17 @@ var-list-opt: %empty
 
 function-decl: kind ID LPAR kind RPAR SEMICOLON 
 { 
-    table.addfunc($2, ($4 ? "float" : "int")); 
+    table.addfunc($2, $4); 
 }
 ;
 
 function-def: kind ID LPAR kind ID RPAR 
 {
     table.enterScope();
-    ret_type = $1; 
-	table.decl_type(($1 ? "float" : "int"));
-    table.definefunc($2, ($4 ? "float" : "int"));
-    table.decl_type(($4 ? "float" : "int"));
+    ret_type = $1[0]; 
+	table.decl_type($1);
+    table.definefunc($2, $4);
+    table.decl_type($4);
     table.addvar($5);
 	vlist.clear();
 	ilist.clear();

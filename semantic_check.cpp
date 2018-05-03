@@ -1,12 +1,6 @@
 // #sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <cmath>
-
-extern char current_factor; 
-extern int ret_type; 
+#include "semantic_check.hpp"
 
 //Checks to make sure that 2 variables are of the same type
 void operation_check(const char *left, const char *right, symbol_table& table){
@@ -49,13 +43,10 @@ void function_check(const char *func, const char *param, symbol_table& table){
               << var_type << "\n";
 }
 
-/* 0: int 1: float */
-static char ret_check[] = { 'i', 'f' };
-
 /* checks if what's being returned agrees with the function's return type.
  * Currently relies on globals too much... */ 
 void return_check(const symbol_table& t){
-    if(ret_check[ret_type] != current_factor)
+    if(ret_type != current_factor)
         std::cerr << "Type error on line " << t.getlineno()
                   << ": return statement does not match function return type\n";
 }
