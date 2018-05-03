@@ -32,7 +32,11 @@
     int ival;
     float fval;
     char *sval;
+    char keyword[7]; /* longest KW is 6 chars (return) */ 
+    char op[3];      /* ops are at most 2 chars */ 
 }
+
+%destructor { free($$); } <sval>  /* sval is always strdup'd */ 
 
 %token <ival> KW_INT "int" <ival> KW_FLOAT "float" 
 %token <sval> ID <ival> INT_LIT <fval> FLOAT_LIT <sval> STRING_LIT  
@@ -191,13 +195,19 @@ expr1-addop: %empty
 | expr1-addop addop term
 ;
 
-mulop: OP_MULT | OP_DIV
+mulop: OP_MULT 
+| OP_DIV
 ;
 
-addop: OP_PLUS | OP_MINUS
+addop: OP_PLUS 
+| OP_MINUS
 ;
 
-bool-op: OP_LT | OP_GT | OP_EQ | OP_GE | OP_LE
+bool-op: OP_LT
+| OP_GT       
+| OP_EQ      
+| OP_GE     
+| OP_LE    
 ;
 
 expr: ID OP_ASSIGN expr 
@@ -231,6 +241,7 @@ int main(int argc, char** argv){
         yyparse();
 	} while(!feof(yyin));
 }
+
 /* 
 Sample input: 
 int y;
