@@ -3,11 +3,12 @@ BFLAGS = -vd
 CPPFLAGS = -std=c++1z -Wno-deprecated -O2
 all: sic
 
-sic: sic.tab.o lex.yy.o symbol_table.o semantic_check.o
+sic: sic.tab.o lex.yy.o labler.o symbol_table.o assembler.o semantic_check.o
 	@echo ========================================
 	@echo \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ MAKING
 	@echo ========================================
-	g++ -o sic ${CPPFLAGS} sic.tab.o lex.yy.o symbol_table.o semantic_check.o
+	g++ -o sic ${CPPFLAGS} sic.tab.o lex.yy.o labler.o symbol_table.o \
+	assembler.o semantic_check.o
 
 sic.tab.o: sic.y 
 	bison ${BFLAGS} sic.y
@@ -22,6 +23,12 @@ symbol_table.o: symbol_table.cpp
 
 semantic_check.o: semantic_check.cpp
 	g++ ${CPPFLAGS} -c semantic_check.cpp
+
+assembler.o: assembler.cpp
+	g++ $(CPPFLAGS) -c assembler.cpp
+
+labler.o: labler.cpp
+	g++ $(CPPFLAGS) -c labler.cpp
 
 clean: 
 	rm -f sic.output sic.tab.* lex.yy.c sic *.o

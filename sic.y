@@ -1,7 +1,7 @@
 %{
     // sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
 
-    #include "symbol_table.hpp"
+    #include "assembler.hpp" 
 	#include "semantic_check.hpp" 
     #include <string> 
 	#include <iostream>
@@ -19,7 +19,7 @@
      * 'f' means "fval" (float - for FLOAT_LIT) */ 
     char current_factor; 
     char ret_type; 
-    symbol_table table;
+    assembler mass; 
 	std::vector<char*> vlist;
 	std::vector<int> ilist;
 	std::vector<float> flist;
@@ -33,7 +33,7 @@
     float fval;
     char *sval;
     char kw[7]; /* longest KW is 6 chars (return) */ 
-    char op[3];      /* ops are at most 2 chars */ 
+    char op[3]; /* ops are at most 2 chars */ 
 }
 
 %destructor { free($$); } <sval>  /* sval is always strdup'd */ 
@@ -62,6 +62,8 @@
  %expect 1
 %%
 
+program1: program { puts("EOF"); }
+
 program: %empty 
 | program function-def
 | program decl         
@@ -71,36 +73,36 @@ program: %empty
 decl: kind var-list SEMICOLON
 ;
 
-kind: "int" { table.decl_type($1); }
-| "float" { table.decl_type($1); }
+kind: "int" { mass.decl_type($1); }
+| "float" { mass.decl_type($1); }
 ;
 
-var-list: ID var-list-opt { table.addvar($1); } 
+var-list: ID var-list-opt { mass.addvar($1); } 
 ;
 
 var-list-opt: %empty
-| var-list-opt COMMA ID { table.addvar($3); }
+| var-list-opt COMMA ID { mass.addvar($3); }
 ;
 
 function-decl: kind ID LPAR kind RPAR SEMICOLON 
 { 
-    table.addfunc($2, $4); 
+    mass.addfunc($2, $4); 
 }
 ;
 
 function-def: kind ID LPAR kind ID RPAR 
 {
-    table.enterScope();
+    mass.enterScope();
     ret_type = $1[0]; 
-	table.decl_type($1);
-    table.definefunc($2, $4);
-    table.decl_type($4);
-    table.addvar($5);
+	mass.decl_type($1);
+    mass.definefunc($2, $4);
+    mass.decl_type($4);
+    mass.addvar($5);
 	vlist.clear();
 	ilist.clear();
 	flist.clear();
 }
-body { table.exitScope(); } 
+body { mass.exitScope(); } 
 ;
 
 body: LBRACE body-decl body-stmt RBRACE
@@ -120,7 +122,7 @@ stmt: expr SEMICOLON
 | "while" LPAR bool-expr RPAR stmt
 | "read" var-list SEMICOLON
 | "write" write-expr-list SEMICOLON
-| "return" expr SEMICOLON { return_check(table); }
+| "return" expr SEMICOLON { return_check(); }
 | LBRACE opt-stmt RBRACE
 ;
 
@@ -163,7 +165,7 @@ factor: ID
 
 bool-expr: expr bool-op expr
 	{
-		boolean_check(vlist,ilist,flist,table);
+		boolean_check(vlist,ilist,flist);
 		vlist.clear();
 		ilist.clear();
 		flist.clear();	
@@ -172,26 +174,28 @@ bool-expr: expr bool-op expr
 
 function-call: ID LPAR expr RPAR 
 	{ 
-		table.callfunc($1); 
-		function_check($1,vlist.back(),table);
+		mass.callfunc($1); 
+		function_check($1,vlist.back());
 		vlist.pop_back();
 		vlist.push_back($1);
 	} 
 ;
 
+/* (-) factor * or / (-) factor */ 
 term: addop factor term-mulop 
-    { if(current_factor == 's') table.usevar($<sval>1); }
+    { if(current_factor == 's') mass.usevar($<sval>1); }
 | factor term-mulop 
-    { if(current_factor == 's') table.usevar($<sval>1); }
+    { if(current_factor == 's') mass.usevar($<sval>1); }
 ;
 
 term-mulop: %empty 
 | term-mulop mulop addop factor 
-    { if(current_factor == 's') table.usevar($<sval>4); }
+    { if(current_factor == 's') mass.usevar($<sval>4); }
 | term-mulop mulop factor 
-    { if(current_factor == 's') table.usevar($<sval>3); } 
+    { if(current_factor == 's') mass.usevar($<sval>3); } 
 ;
 
+/* term +/- term */
 expr1: term expr1-addop
 ;
 
@@ -214,15 +218,16 @@ bool-op: OP_LT
 | OP_LE    
 ;
 
+/* t = tn */ 
 expr: ID OP_ASSIGN expr 
 	{ 
-		table.usevar($1);
+		mass.usevar($1);
 		for(int i = 0; i < vlist.size(); i++)
-			operation_check($1,vlist[i],table);
+			operation_check($1,vlist[i]);
 		for(int i = 0; i < ilist.size(); i++)
-			operation_check($1,ilist[i],table);
+			operation_check($1,ilist[i]);
 		for(int i = 0; i < flist.size(); i++)
-			operation_check($1,flist[i],table);
+			operation_check($1,flist[i]);
 		vlist.clear();
 		ilist.clear();
 		flist.clear();

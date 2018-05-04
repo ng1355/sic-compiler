@@ -27,6 +27,7 @@ struct token{
     token(  const std::string& type, 
             const std::string& name, 
             const int line,
+            const std::string& label, 
             const bool isFunc = false, 
             const std::string& param = "",
             const bool defined = false
@@ -37,6 +38,7 @@ struct token{
     std::string type;
     std::string name;
     int line; 
+    std::string label; 
 
     /* below members are just for functions */ 
     bool isFunc; 
@@ -58,24 +60,26 @@ public:
     void decl_type(const std::string& type);
 
     // add either float or int
-    void addvar(const std::string& name);
+    bool addvar(const std::string& name, const std::string& label);
     
     // check if a variable has been initialized, first in local,
     // then in global space 
-    void usevar(const std::string& name);
+    bool usevar(const std::string& name);
 
     // used for function DECLERATIONS 
-    void addfunc(const std::string& name, 
+    bool addfunc(const std::string& name, 
                  const std::string& param, 
+                 const std::string& label,
                  const bool defined = false);
 
     // used for function DEFINITIONS 
-    void definefunc(const std::string& name, const std::string& param);
+    bool definefunc(const std::string& name, 
+                    const std::string& param,
+                    const std::string& label);
                     
-
     // check if we can call a function by checking if its defined 
     // returns false if called function was not a function
-    void callfunc(const std::string& name) const;
+    bool callfunc(const std::string& name) const;
 
     void enterScope();
     void exitScope();
@@ -88,7 +92,7 @@ public:
     void operator ++ ();
     int  getlineno() const;
     // non-modifyngly retrieve token if it exists
-    void operator [] (const std::string& name);
+    const token *operator [] (const std::string& name) const;
 
 private:
     std::unordered_map<std::string, token> local;

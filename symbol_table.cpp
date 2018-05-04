@@ -11,6 +11,7 @@ token::token() = default;
 token::token(   const std::string& type, 
                 const std::string& name, 
                 const int line,
+                const std::string& label, 
                 const bool isFunc,
                 const std::string& param,
                 const bool defined
@@ -18,6 +19,7 @@ token::token(   const std::string& type,
 		     type(type), 
              name(name), 
              line(line), 
+             label(label), 
              isFunc(isFunc),
              param(param),
              defined(defined) {}
@@ -54,69 +56,77 @@ void symbol_table::decl_type(const std::string& type){
 }
 
 // add a variable to the token table 
-void symbol_table::addvar(const std::string& name){
+bool symbol_table::addvar(const std::string& name, const std::string& label){
     if(inScope){
         auto [ it, added ] = 
-            local.emplace(name, token{current_type, name, line_no});
+            local.emplace(name, token{current_type, name, line_no, label});
         if(added) printStatus(VAR_DECL, it->second);
-        else printError(VAR_REDEF, it->second);
+        else { printError(VAR_REDEF, it->second); return false; } 
     } else {
         auto [ it, added ] = 
-            global.emplace(name, token{current_type, name, line_no});
+            global.emplace(name, token{current_type, name, line_no, label});
         if(added) printStatus(VAR_DECL, it->second);
-        else printError(VAR_REDEF, it->second);
+        else { printError(VAR_REDEF, it->second); return false; } 
     }
+    return true; 
 }
 
 
 //check if a variable has been initialized
-void symbol_table::usevar(const std::string& name){
+bool symbol_table::usevar(const std::string& name){
     auto it = local.find(name);
     if(it != local.end()) printStatus(LOCAL_VAR_USE, it->second);
     else if(it = global.find(name); it != global.end()){
         if(it->second.isFunc){ 
             printError(USE_FUNC_AS_VAR, it->second,  name); 
-            return; 
+            return false; 
         }
         printStatus(GLOBAL_VAR_USE, it->second);
     }
-    else printError(BAD_VAR, token(), name);
+    else { printError(BAD_VAR, token(), name); return false; }
+    return true; 
 }
 
 // add a function declaration 
-void symbol_table::addfunc( const std::string& name, 
+bool symbol_table::addfunc( const std::string& name, 
                             const std::string& param,
+                            const std::string& label,
                             const bool defined)
 {
     auto [ it, added ] = 
-        global.emplace(name, token{current_type, name, line_no, true, param, defined});
-    if(!added) printError(FUNC_REDECL, it->second);
+        global.emplace(name, token{current_type, name, line_no, 
+                label, true, param, defined});
+    if(!added) { printError(FUNC_REDECL, it->second); return false; } 
     else if(defined) printStatus(FUNC_DEF, it->second);
     else printStatus(FUNC_DECL, it->second);
+    return true; 
 }
 
-void symbol_table::definefunc(  const std::string& name, 
-                                const std::string& param)
+bool symbol_table::definefunc(const std::string& name, 
+                              const std::string& param,
+                              const std::string& label)
 {
-    addfunc(name, param, true);
+    return addfunc(name, param, label, true);
 }
 
 // check if a function is defined 
-void symbol_table::callfunc(const std::string& name) const {
+bool symbol_table::callfunc(const std::string& name) const {
     auto it = global.find(name);
     if(it != global.end()){ 
         if(!it->second.isFunc){ 
             printError(USE_VAR_AS_FUNC, it->second, name); 
-            return; 
+            return false; 
         }
         printStatus(FUNC_CALL, it->second);
-    } else printError(BAD_CALL); 
+    } else { printError(BAD_CALL); return false; } 
+    return true; 
 }
 
 void symbol_table::enterScope(){
     inScope = true; 
 }
 
+/* TODO: recycle memory locations for local objects */ 
 void symbol_table::exitScope(){
     inScope = false;
     local.clear();
@@ -182,3 +192,12 @@ void symbol_table::printStatus(const int type, const token& tok) const {
 
 void symbol_table::operator ++ (){ ++line_no; }
 int  symbol_table::getlineno() const { return line_no; }
+
+const token *symbol_table::operator [] (const std::string& name) const {
+    auto it = local.find(name);
+    if(it == local.end()) return nullptr; 
+    else 
+        if((it = global.find(name)) == global.end()) return nullptr;
+    return &(it->second);
+}
+

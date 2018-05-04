@@ -2,8 +2,8 @@
 // sic compiler for CS-UY 3943 by Nikita Georgiou and Jack Martinez
 
 #define register  /* Removes deprecated keyword from flex files */ 
+#include "assembler.hpp"
 #include "sic.tab.h" 
-#include "symbol_table.hpp"
 #include "semantic_check.hpp"
 
 
@@ -15,7 +15,7 @@
 char op_name[20];
 char *skip;
 int mylength;
-extern symbol_table table;
+extern assembler mass;
 
 %}
 
@@ -29,7 +29,7 @@ extern symbol_table table;
 "/*"		BEGIN(comment);
 <comment>[^*\n]*	   /* eat anything that's not a '*' */
 <comment>"*"+[^*/\n]*   /* eat up '*'s not followed by '/'s */
-<comment>\n		   ++table;
+<comment>\n		   ++mass;
 <comment>"*"+"/"	   BEGIN(INITIAL);
 
  /* tokens */
@@ -72,7 +72,7 @@ extern symbol_table table;
 			      fprintf(stderr,
 				      "Suspiciously large interger literal %s in line %d. "
                       "Replacing by 0.\n",
-				      skip, table.getlineno());
+				      skip, mass.getlineno());
 			      yylval.ival=0;
 			    }
 			  else 
@@ -89,7 +89,7 @@ extern symbol_table table;
 			      fprintf(stderr,
 				      "Suspiciously long float literal %s in line %d. " 
                       "Replacing by 0.0.\n",
-				      skip, table.getlineno());
+				      skip, mass.getlineno());
 			      yylval.fval=0;
 			    }
 			  return (FLOAT_LIT);
@@ -103,11 +103,11 @@ extern symbol_table table;
 
   /* The ones below are not really tokens, but 
    * things ignored by the compiler, except for counting lines. */
-\n			{ ++table; /* not a token; add return(NL_TOKEN) for testing */ }
+\n			{ ++mass; /* not a token; add return(NL_TOKEN) for testing */ }
 [\t ]+			{} /* skip white space; add return(WS_TOKEN) for testing. */ 
 %%
 
 void yyerror(const char *c){
-    std::cout << c << " on line " << table.getlineno() << ", matched: " <<
+    std::cout << c << " on line " << mass.getlineno() << ", matched: " <<
     yytext << '\n';
 }
