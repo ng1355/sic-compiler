@@ -13,6 +13,7 @@ const int BAD_CALL = 2;
 const int BAD_VAR = 3;
 const int USE_FUNC_AS_VAR = 4;
 const int USE_VAR_AS_FUNC = 5;
+const int NO_MAIN = 6;
 
 const int VAR_DECL = 0;
 const int LOCAL_VAR_USE = 1;
@@ -92,6 +93,7 @@ public:
     void operator ++ ();
     int  getlineno() const;
     // non-modifyngly retrieve token if it exists
+    // really wish Apple would hurry and make std::optional official...
     const token *operator [] (const std::string& name) const;
 
 private:

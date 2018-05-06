@@ -158,6 +158,9 @@ void symbol_table::printError(const int type, const token& tok,
         case USE_FUNC_AS_VAR:
             std::cerr << "Error:" << line_no << ": try to use function "
                       << name << " as a variable\n";
+            break;
+        case NO_MAIN:
+            std::cerr << "Error:" << line_no << ": No main found\n"; 
     }
 }
 
@@ -195,8 +198,7 @@ int  symbol_table::getlineno() const { return line_no; }
 
 const token *symbol_table::operator [] (const std::string& name) const {
     auto it = local.find(name);
-    if(it == local.end()) return nullptr; 
-    else 
+    if(it == local.end()) 
         if((it = global.find(name)) == global.end()) return nullptr;
     return &(it->second);
 }

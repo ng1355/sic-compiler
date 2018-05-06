@@ -62,7 +62,13 @@
  %expect 1
 %%
 
-program1: program { puts("EOF"); }
+program1: program { 
+        mass.bindmain();
+        mass.end();
+        printf("EOF\nCode:\n");
+        mass.printcode(); 
+        mass.outputcode();
+}
 
 program: %empty 
 | program function-def
@@ -98,6 +104,7 @@ function-def: kind ID LPAR kind ID RPAR
     mass.definefunc($2, $4);
     mass.decl_type($4);
     mass.addvar($5);
+    mass.funcprologue($2, $5); 
 	vlist.clear();
 	ilist.clear();
 	flist.clear();
@@ -122,7 +129,7 @@ stmt: expr SEMICOLON
 | "while" LPAR bool-expr RPAR stmt
 | "read" var-list SEMICOLON
 | "write" write-expr-list SEMICOLON
-| "return" expr SEMICOLON { return_check(); }
+| "return" expr SEMICOLON { return_check(); mass.ret(); }
 | LBRACE opt-stmt RBRACE
 ;
 
@@ -181,7 +188,7 @@ function-call: ID LPAR expr RPAR
 	} 
 ;
 
-/* (-) factor * or / (-) factor */ 
+/* (-) factor [* or /] (-) factor */ 
 term: addop factor term-mulop 
     { if(current_factor == 's') mass.usevar($<sval>1); }
 | factor term-mulop 
@@ -231,6 +238,7 @@ expr: ID OP_ASSIGN expr
 		vlist.clear();
 		ilist.clear();
 		flist.clear();
+        mass.assign($1);
 	}
 | expr1
 ;
