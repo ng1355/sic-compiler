@@ -9,7 +9,7 @@
 #include <vector>
 #include <cmath>
 
-extern char current_factor; 
+extern char expr_type; 
 extern char ret_type;  /* either i or f */ 
 extern assembler mass; 
 

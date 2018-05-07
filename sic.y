@@ -7,6 +7,7 @@
 	#include <iostream>
 	#include <cstdio>
 	#include <vector>
+    #include <sstream> 
 
 	int yylex();
 	int yyparse();
@@ -18,6 +19,7 @@
      * 'i' means "ival" (int - for INT_LIT) 
      * 'f' means "fval" (float - for FLOAT_LIT) */ 
     char current_factor; 
+    char expr_type; 
     char ret_type; 
     assembler mass; 
 	std::vector<char*> vlist;
@@ -33,7 +35,9 @@
     float fval;
     char *sval;
     char kw[7]; /* longest KW is 6 chars (return) */ 
-    char op[3]; /* ops are at most 2 chars */ 
+    char op[3]; /* anything thats not an addop or mulop */ 
+    char addop[2];
+    char mulop[2]; 
 }
 
 %destructor { free($$); } <sval>  /* sval is always strdup'd */ 
@@ -83,11 +87,11 @@ kind: "int" { mass.decl_type($1); }
 | "float" { mass.decl_type($1); }
 ;
 
-var-list: ID var-list-opt { mass.addvar($1); } 
+var-list: ID var-list-opt { mass.addvar($1); mass.addvarlist($1); } 
 ;
 
 var-list-opt: %empty
-| var-list-opt COMMA ID { mass.addvar($3); }
+| var-list-opt COMMA ID { mass.addvar($3); mass.addvarlist($3); }
 ;
 
 function-decl: kind ID LPAR kind RPAR SEMICOLON 
@@ -124,10 +128,10 @@ body-stmt: %empty
 ;
 
 stmt: expr SEMICOLON
-| "if" LPAR bool-expr RPAR stmt "else" stmt 
-| "if" LPAR bool-expr RPAR stmt 
-| "while" LPAR bool-expr RPAR stmt
-| "read" var-list SEMICOLON
+| "if" LPAR bool-expr RPAR stmt "else" { mass.endif(); mass.addelse(expr_type); } stmt {mass.endif();}
+| "if" LPAR bool-expr RPAR stmt {mass.endif();}
+| "while" { mass.startloop(); } LPAR bool-expr RPAR stmt { mass.endloop(); }
+| "read" var-list SEMICOLON { mass.read(expr_type); }
 | "write" write-expr-list SEMICOLON
 | "return" expr SEMICOLON { return_check(); mass.ret(); }
 | LBRACE opt-stmt RBRACE
@@ -144,38 +148,44 @@ wel-optional: %empty
 | wel-optional COMMA wel-group
 ;
 
-wel-group: expr
-| STRING_LIT
+wel-group: expr { mass.writeExpr(expr_type); } 
+| STRING_LIT { mass.writes($<sval>1); } 
 ;
 
 factor: ID  
 	{ 
 		$<sval>$ = $1; 
 		current_factor = 's'; 
+        expr_type = 's';
 		vlist.push_back($1);
 	}
 | INT_LIT   
 	{ 
 		$<ival>$ = $1; 
 		current_factor = 'i'; 
+        expr_type = 'i';
 		ilist.push_back($1);
 	}
 | FLOAT_LIT 
 	{ 
 		$<fval>$ = $1; 
 		current_factor = 'f'; 
+        expr_type = 'f';
 		flist.push_back($1);
 	}
-| function-call
-| LPAR expr RPAR
+| function-call { current_factor = 0; } 
+| LPAR expr RPAR {current_factor = 0; } 
 ;
 
-bool-expr: expr bool-op expr
+bool-expr: expr { mass.boollhs(expr_type); } bool-op expr
 	{
 		boolean_check(vlist,ilist,flist);
 		vlist.clear();
 		ilist.clear();
 		flist.clear();	
+        mass.startif(); 
+        mass.boolrhs($<op>3, expr_type); 
+        mass.branch(expr_type);
 	}
 ;
 
@@ -185,29 +195,111 @@ function-call: ID LPAR expr RPAR
 		function_check($1,vlist.back());
 		vlist.pop_back();
 		vlist.push_back($1);
+        mass.call($1);
 	} 
 ;
 
 /* (-) factor [* or /] (-) factor */ 
-term: addop factor term-mulop 
-    { if(current_factor == 's') mass.usevar($<sval>1); }
-| factor term-mulop 
-    { if(current_factor == 's') mass.usevar($<sval>1); }
+term: addop factor 
+    { 
+        puts("\nterm");
+        if(current_factor == 's'){ 
+            mass.usevar($<sval>2); 
+            std::cout << "sval: "<< $<sval>2 << '\n';
+            mass.addterm($<sval>2);
+        }
+        else if(current_factor == 'i'){
+            std::cout << "ival" << $<ival>2 << '\n';
+            //mass.emplace_back(std::to_string($<ival>2));
+//            std::cout << "added: " << mass.back() << '\n';
+        }
+        else if(current_factor == 'f'){
+            std::cout << "fval: " << $<fval>2 << '\n';
+            mass.addterm(std::to_string($<fval>2));
+        }
+        std::cout << "addop: " << $<addop>1 << '\n';
+        mass.addterm($<addop>1);
+
+    } term-mulop
+| factor 
+    { 
+    puts("\nterm2");
+    if(current_factor == 's'){ 
+        std::cout << "sval: " << $<sval>1 << '\n';
+        mass.addterm($<sval>1);
+        mass.usevar($<sval>1); 
+      }
+    else if(current_factor == 'i'){
+        mass.addterm(std::to_string($<ival>1));
+        std:: cout << "ival: " << $<ival>1 << '\n';
+    }
+    else if(current_factor == 'f'){
+        mass.addterm(std::to_string($<fval>1));
+        std::cout << "fval: " << $<fval>1 << '\n';
+    }
+} term-mulop
 ;
 
 term-mulop: %empty 
 | term-mulop mulop addop factor 
-    { if(current_factor == 's') mass.usevar($<sval>4); }
+    { 
+       puts("\nterm mulop");
+
+    if(current_factor == 's'){
+        mass.usevar($<sval>4); 
+        mass.addterm($<sval>4);
+        std::cout << "Sval: " << $<sval>4 << '\n';
+    }
+    else if(current_factor == 'i'){
+        mass.addterm(std::to_string($<ival>4));
+        std::cout << "ival: " << $<ival>4 << '\n';
+//        std::cout << "added: " << mass.back() << '\n';
+    }
+    else if(current_factor == 'f'){
+        mass.addterm(std::to_string($<fval>4));
+        std::cout << "fval: " << $<fval>4 << '\n';
+    }
+    std::cout << "mulop: " << $<mulop>2 << '\n' << "addop: " << $<addop>3 << '\n';
+    mass.addterm($<mulop>2);
+    mass.addterm($<addop>3);
+}
+
+
 | term-mulop mulop factor 
-    { if(current_factor == 's') mass.usevar($<sval>3); } 
+    { 
+    puts("\nterm-mulop");
+    if(current_factor == 's'){
+        mass.usevar($<sval>3); 
+        std::cout << "sval: " << $<sval>3 << '\n';
+        mass.addterm($<sval>2);
+    }
+    else if(current_factor == 'i'){
+        std::cout << "ival: " << $<ival>3 << '\n';
+        mass.addterm(std::to_string($<ival>3));
+    }
+    else if(current_factor == 'f'){
+        std::cout << "fval: " << $<fval>3 << '\n';
+        mass.addterm(std::to_string($<fval>3));
+    }
+    std::cout << "mulop: " << $<mulop>2 << '\n';
+    mass.addterm($<mulop>2);
+}
 ;
 
 /* term +/- term */
-expr1: term expr1-addop
+expr1: term expr1-addop {
+     //puts("\nexpr1");
+     //for(const auto& s : ops) std::cout << s << '\n';
+     std::cout << '\n';
+}
 ;
 
 expr1-addop: %empty
-| expr1-addop addop term
+| expr1-addop addop term { 
+    puts("\nexpr1addop");
+    std::cout << "addop: " << $<addop>2 << '\n';
+    mass.addterm($<addop>2);
+}
 ;
 
 mulop: OP_MULT 
@@ -240,7 +332,10 @@ expr: ID OP_ASSIGN expr
 		flist.clear();
         mass.assign($1);
 	}
-| expr1
+| expr1 { 
+    if(expr_type == 's') expr_type = mass.getType($<sval>1)[0];
+    mass.eval(expr_type); 
+}
 ;
 %%
 
