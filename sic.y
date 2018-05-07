@@ -68,7 +68,6 @@
 
 program1: program { 
         mass.bindmain();
-        mass.end();
         printf("EOF\nCode:\n");
         mass.printcode(); 
         mass.outputcode();
@@ -80,18 +79,18 @@ program: %empty
 | program function-decl
 ;
 
-decl: kind var-list SEMICOLON
+decl: kind var-list SEMICOLON { mass.addvars(); } 
 ;
 
 kind: "int" { mass.decl_type($1); }
 | "float" { mass.decl_type($1); }
 ;
 
-var-list: ID var-list-opt { mass.addvar($1); mass.addvarlist($1); } 
+var-list: ID var-list-opt { mass.addvarlist($1); } 
 ;
 
 var-list-opt: %empty
-| var-list-opt COMMA ID { mass.addvar($3); mass.addvarlist($3); }
+| var-list-opt COMMA ID { mass.addvarlist($3); }
 ;
 
 function-decl: kind ID LPAR kind RPAR SEMICOLON 
@@ -113,7 +112,7 @@ function-def: kind ID LPAR kind ID RPAR
 	ilist.clear();
 	flist.clear();
 }
-body { mass.exitScope(); } 
+body { mass.addendifmain($<sval>2); mass.exitScope(); } 
 ;
 
 body: LBRACE body-decl body-stmt RBRACE
@@ -131,7 +130,7 @@ stmt: expr SEMICOLON
 | "if" LPAR bool-expr RPAR stmt "else" { mass.endif(); mass.addelse(expr_type); } stmt {mass.endif();}
 | "if" LPAR bool-expr RPAR stmt {mass.endif();}
 | "while" { mass.startloop(); } LPAR bool-expr RPAR stmt { mass.endloop(); }
-| "read" var-list SEMICOLON { mass.read(expr_type); }
+| "read" { mass.clearvarlist(); }  var-list SEMICOLON { mass.read(expr_type); }
 | "write" write-expr-list SEMICOLON
 | "return" expr SEMICOLON { return_check(); mass.ret(); }
 | LBRACE opt-stmt RBRACE
@@ -202,40 +201,30 @@ function-call: ID LPAR expr RPAR
 /* (-) factor [* or /] (-) factor */ 
 term: addop factor 
     { 
-        puts("\nterm");
         if(current_factor == 's'){ 
             mass.usevar($<sval>2); 
-            std::cout << "sval: "<< $<sval>2 << '\n';
             mass.addterm($<sval>2);
         }
         else if(current_factor == 'i'){
-            std::cout << "ival" << $<ival>2 << '\n';
-            //mass.emplace_back(std::to_string($<ival>2));
-//            std::cout << "added: " << mass.back() << '\n';
+            mass.addterm(std::to_string($<ival>2));
         }
         else if(current_factor == 'f'){
-            std::cout << "fval: " << $<fval>2 << '\n';
             mass.addterm(std::to_string($<fval>2));
         }
-        std::cout << "addop: " << $<addop>1 << '\n';
         mass.addterm($<addop>1);
 
     } term-mulop
 | factor 
     { 
-    puts("\nterm2");
     if(current_factor == 's'){ 
-        std::cout << "sval: " << $<sval>1 << '\n';
         mass.addterm($<sval>1);
         mass.usevar($<sval>1); 
       }
     else if(current_factor == 'i'){
         mass.addterm(std::to_string($<ival>1));
-        std:: cout << "ival: " << $<ival>1 << '\n';
     }
     else if(current_factor == 'f'){
         mass.addterm(std::to_string($<fval>1));
-        std::cout << "fval: " << $<fval>1 << '\n';
     }
 } term-mulop
 ;
@@ -243,23 +232,16 @@ term: addop factor
 term-mulop: %empty 
 | term-mulop mulop addop factor 
     { 
-       puts("\nterm mulop");
-
     if(current_factor == 's'){
         mass.usevar($<sval>4); 
         mass.addterm($<sval>4);
-        std::cout << "Sval: " << $<sval>4 << '\n';
     }
     else if(current_factor == 'i'){
         mass.addterm(std::to_string($<ival>4));
-        std::cout << "ival: " << $<ival>4 << '\n';
-//        std::cout << "added: " << mass.back() << '\n';
     }
     else if(current_factor == 'f'){
         mass.addterm(std::to_string($<fval>4));
-        std::cout << "fval: " << $<fval>4 << '\n';
     }
-    std::cout << "mulop: " << $<mulop>2 << '\n' << "addop: " << $<addop>3 << '\n';
     mass.addterm($<mulop>2);
     mass.addterm($<addop>3);
 }
@@ -270,34 +252,25 @@ term-mulop: %empty
     puts("\nterm-mulop");
     if(current_factor == 's'){
         mass.usevar($<sval>3); 
-        std::cout << "sval: " << $<sval>3 << '\n';
         mass.addterm($<sval>2);
     }
     else if(current_factor == 'i'){
-        std::cout << "ival: " << $<ival>3 << '\n';
         mass.addterm(std::to_string($<ival>3));
     }
     else if(current_factor == 'f'){
-        std::cout << "fval: " << $<fval>3 << '\n';
         mass.addterm(std::to_string($<fval>3));
     }
-    std::cout << "mulop: " << $<mulop>2 << '\n';
     mass.addterm($<mulop>2);
 }
 ;
 
 /* term +/- term */
 expr1: term expr1-addop {
-     //puts("\nexpr1");
-     //for(const auto& s : ops) std::cout << s << '\n';
-     std::cout << '\n';
 }
 ;
 
 expr1-addop: %empty
 | expr1-addop addop term { 
-    puts("\nexpr1addop");
-    std::cout << "addop: " << $<addop>2 << '\n';
     mass.addterm($<addop>2);
 }
 ;

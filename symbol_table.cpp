@@ -96,7 +96,14 @@ bool symbol_table::addfunc( const std::string& name,
     auto [ it, added ] = 
         global.emplace(name, token{current_type, name, line_no, 
                 label, true, param, defined});
-    if(!added) { printError(FUNC_REDECL, it->second); return false; } 
+    if(!added) { 
+        if(it->second.defined){
+            printError(FUNC_REDEF, it->second); return false; } 
+        else if(defined){
+            it->second.defined = true;
+        } else {
+            printError(FUNC_REDECL, it->second); return false; } 
+    }
     else if(defined) printStatus(FUNC_DEF, it->second);
     else printStatus(FUNC_DECL, it->second);
     return true; 
@@ -146,6 +153,11 @@ void symbol_table::printError(const int type, const token& tok,
             std::cerr  << "Error:" << line_no << ": function " 
                        << tok.toString()
                        << " already declared on line " << tok.line << '\n';
+            break;
+        case FUNC_REDEF:
+            std::cerr  << "Error:" << line_no << ": function " 
+                       << tok.toString()
+                       << " already defined on line " << tok.line << '\n';
             break;
         case BAD_CALL:
         case BAD_VAR:
