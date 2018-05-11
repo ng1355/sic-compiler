@@ -304,18 +304,24 @@ bool-op: OP_LT
 expr: ID OP_ASSIGN expr 
 	{ 
 		mass.usevar($1);
-		for(int i = 0; i < vlist.size(); i++)
+		for(int i = 0; i < vlist.size(); i++){
+			puts("A");
 			operation_check($1,vlist[i]);
-		for(int i = 0; i < ilist.size(); i++)
+		}
+		for(int i = 0; i < ilist.size(); i++){
+			puts("B");
 			operation_check($1,ilist[i]);
-		for(int i = 0; i < flist.size(); i++)
+		}
+		for(int i = 0; i < flist.size(); i++){
+			puts("C");
 			operation_check($1,flist[i]);
+		}
 		vlist.clear();
 		ilist.clear();
 		flist.clear();
         mass.assign($1);
 	}
-| expr1 { 
+| expr1 {
     if(expr_type == 's') expr_type = mass.getType($<sval>1)[0];
     mass.eval(expr_type); 
 }
