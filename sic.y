@@ -190,10 +190,20 @@ bool-expr: expr { mass.boollhs(expr_type); } bool-op expr
 
 function-call: ID LPAR expr RPAR 
 	{ 
-		mass.callfunc($1); 
-		function_check($1,vlist.back());
-		vlist.pop_back();
-		vlist.push_back($1);
+		mass.callfunc($1);
+		if(current_factor == 's'){
+			function_check($1,vlist.back());
+			vlist.pop_back();
+			vlist.push_back($1);
+		}else if(current_factor == 'i'){
+			function_check($1,ilist.back());
+			ilist.pop_back();
+			vlist.push_back($1);
+		}else if(current_factor == 'f'){
+			function_check($1,flist.back());
+			flist.pop_back();
+			vlist.push_back($1);
+		}
         mass.call($1);
 	} 
 ;

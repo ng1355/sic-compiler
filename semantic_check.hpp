@@ -17,6 +17,8 @@ void operation_check(const char *left, const char *right);
 void operation_check(const char *left, const int right); 
 void operation_check(const char *left, const float right);
 void function_check(const char *func, const char *param);
+void function_check(const char *func, const int param);
+void function_check(const char *func, const float param);
 void return_check();
 void boolean_check(std::vector<char*> vlist, std::vector<int> ilist, 
         std::vector<float> flist);

@@ -29,7 +29,6 @@ void operation_check(const char *left, const int right){
 void operation_check(const char *left, const float right){
 	std::string var_type = mass.getType(left);
     int line = mass.getlineno();
-	if(var_type == "float") return;
 	std::cout << "Type error on line " << line << ": " << left << " expected " 
               << var_type << " but recieved float\n"; 
     mass.error_encountered("float check");
@@ -45,6 +44,27 @@ void function_check(const char *func, const char *param){
               << " expected " << param_type << " but instead recieved " 
               << var_type << "\n";
     mass.error_encountered("param check");
+}
+void function_check(const char *func, const int param){
+	std::string param_type = mass.getparam(func);
+	int line = mass.getlineno();
+	if(param_type == "int") return;
+	std::cout << "Type error on line " << line << ": Function " << func 
+              << " expected " << param_type << " but instead recieved " 
+              << " an int literal\n";
+    mass.error_encountered("param check");
+
+}
+void function_check(const char *func, const float param){
+	std::string param_type = mass.getparam(func);
+	int line = mass.getlineno();
+	std::cout << param_type << " | float literal\n";
+	if(param_type == "float") return;
+	std::cout << "Type error on line " << line << ": Function " << func 
+              << " expected " << param_type << " but instead recieved " 
+              << " a float literal\n";
+    mass.error_encountered("param check");
+
 }
 
 /* checks if what's being returned agrees with the function's return type.
