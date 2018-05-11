@@ -4,7 +4,6 @@
 
 //Checks to make sure that 2 variables are of the same type
 void operation_check(const char *left, const char *right){
-	std::cout << "a\n";
 	std::string ltype, rtype;
 	ltype = mass.getType(left);
 	rtype = mass.getType(right);
@@ -18,7 +17,6 @@ void operation_check(const char *left, const char *right){
 
 //check if a variable and an int-literal are of the same type
 void operation_check(const char *left, const int right){
-	std::cout << "b\n";
 	std::string var_type = mass.getType(left);
     int line = mass.getlineno();
 	if(var_type == "int") return;
@@ -29,7 +27,6 @@ void operation_check(const char *left, const int right){
 
 //check if a variable and a float literal are of the same type 
 void operation_check(const char *left, const float right){
-	std::cout << "c\n";
 	std::string var_type = mass.getType(left);
     int line = mass.getlineno();
 	if(var_type == "float") return;
@@ -62,7 +59,6 @@ void function_check(const char *func, const int param){
 void function_check(const char *func, const float param){
 	std::string param_type = mass.getparam(func);
 	int line = mass.getlineno();
-	std::cout << param_type << " | float literal\n";
 	if(param_type == "float") return;
 	std::cout << "Type error on line " << line << ": Function " << func 
               << " expected " << param_type << " but instead recieved " 

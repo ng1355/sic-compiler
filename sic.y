@@ -153,9 +153,9 @@ wel-group: expr { mass.writeExpr(expr_type); }
 
 factor: ID  
 	{ 
-		$<sval>$ = $1; 
+		$<sval>$ = $1;
 		current_factor = 's'; 
-        expr_type = 's';
+        expr_type = mass.getType($<sval>1)[0];
 		vlist.push_back($1);
 	}
 | INT_LIT   
@@ -304,25 +304,18 @@ bool-op: OP_LT
 expr: ID OP_ASSIGN expr 
 	{ 
 		mass.usevar($1);
-		for(int i = 0; i < vlist.size(); i++){
-			puts("A");
+		for(int i = 0; i < vlist.size(); i++)
 			operation_check($1,vlist[i]);
-		}
-		for(int i = 0; i < ilist.size(); i++){
-			puts("B");
+		for(int i = 0; i < ilist.size(); i++)
 			operation_check($1,ilist[i]);
-		}
-		for(int i = 0; i < flist.size(); i++){
-			puts("C");
+		for(int i = 0; i < flist.size(); i++)
 			operation_check($1,flist[i]);
-		}
 		vlist.clear();
 		ilist.clear();
 		flist.clear();
         mass.assign($1);
 	}
 | expr1 {
-    if(expr_type == 's') expr_type = mass.getType($<sval>1)[0];
     mass.eval(expr_type); 
 }
 ;
