@@ -20,13 +20,13 @@ void assembler::addendifmain(const std::string& name){
 
 void assembler::addvars(){
     for(const auto& s : varlist){ 
-        std::cout << "adding var " << s << '\n';
         addvar(s);
     }
     varlist.clear();
 }
 
 void assembler::addvarlist(const std::string& name){
+    if(error) return; 
     varlist.emplace_back(name);
 }
 
@@ -154,7 +154,7 @@ void assembler::binop(const char op, const std::string& F){
             addins("DIV" + F, memno.getlast(), memno.getlasti() - 1, memno.getnew());
             break;
     }
-    //addins("PUSH" + F, memno.getlast());
+    addins("PUSH" + F, memno.getlast());
 }
 
 void assembler::eval(const char type){
