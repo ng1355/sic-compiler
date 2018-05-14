@@ -27,11 +27,6 @@ void assembler::addvars(){
 }
 
 void assembler::addvarlist(const std::string& name){
-	if(error) return;
-	if(!usevar(name)){
-		error_encountered("addvarlist");
-		return;
-	}
     varlist.emplace_back(name);
 }
 
@@ -40,8 +35,13 @@ void assembler::clearvarlist() { varlist.clear(); }
 void assembler::read(const char type){
 	if(error) return;
     std::string F((type == 'f') ? "F" : "");
-    for(const auto& s : varlist)
+    for(const auto& s : varlist){
+		if(!usevar(s)){
+			error_encountered("read");
+			return;
+		}
         addins("READ" + F, t[s]->label);
+	}
     varlist.clear();
 }
 
@@ -97,6 +97,7 @@ void assembler::addelse(const char type){
 
 void assembler::startloop(){
 	if(error) return;
+	addins("//starting loop");
     addins("LABEL", labelno.getnew());
 }
 
