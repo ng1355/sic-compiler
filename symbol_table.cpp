@@ -77,7 +77,7 @@ bool symbol_table::usevar(const std::string& name){
     auto it = local.find(name);
     if(it != local.end()) printStatus(LOCAL_VAR_USE, it->second);
     else if(it = global.find(name); it != global.end()){
-        if(it->second.isFunc){ 
+        if(it->second.isFunc){
             printError(USE_FUNC_AS_VAR, it->second,  name); 
             return false; 
         }
@@ -164,9 +164,11 @@ void symbol_table::printError(const int type, const token& tok,
             std::cerr  << "Error:" << line_no << ": unknown "
                        << ((type == BAD_VAR) ? "variable " : "function ")
                        << name << '\n';
+			break;
         case USE_VAR_AS_FUNC:
             std::cerr  << "Error:" << line_no << ": trying to use variable "
                        << name << " as a function\n";
+			break;
         case USE_FUNC_AS_VAR:
             std::cerr << "Error:" << line_no << ": try to use function "
                       << name << " as a variable\n";

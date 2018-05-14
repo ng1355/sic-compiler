@@ -27,12 +27,18 @@ void assembler::addvars(){
 }
 
 void assembler::addvarlist(const std::string& name){
+	if(error) return;
+	if(!usevar(name)){
+		error_encountered("addvarlist");
+		return;
+	}
     varlist.emplace_back(name);
 }
 
 void assembler::clearvarlist() { varlist.clear(); } 
 
 void assembler::read(const char type){
+	if(error) return;
     std::string F((type == 'f') ? "F" : "");
     for(const auto& s : varlist)
         addins("READ" + F, t[s]->label);
@@ -40,17 +46,20 @@ void assembler::read(const char type){
 }
 
 void assembler::writes(const std::string& str){
+	if(error) return;
     addins("WRITES", "\"",str, "\"");
     addins("NEWLINE");
 }
 
 void assembler::writeExpr(const char type){
+	if(error) return;
     std::string F((type == 'f') ? "F" : "");
     addins("WRITE" + F, memno.getlast());
     addins("NEWLINE");
 }
 
 void assembler::branch(const char type){
+	if(error) return;
     std::string F((type == 'f') ? "F" : "");
     std::string boolop(boolops[1]);
     if(boolop == "==")
@@ -68,6 +77,7 @@ void assembler::branch(const char type){
 }
 
 void assembler::addelse(const char type){
+	if(error) return;
     std::string F((type == 'f') ? "F" : "");
     std::string boolop(boolops[1]);
     ++labelno; 
@@ -86,10 +96,12 @@ void assembler::addelse(const char type){
 }
 
 void assembler::startloop(){
+	if(error) return;
     addins("LABEL", labelno.getnew());
 }
 
 void assembler::endloop(){
+	if(error) return;
     code.pop_back(); // ugly. compensates for endif() 
     addins("JUMP", labelno.getlasti() - 1);
     addins("LABEL", labelno.getlast()); // not sure if always true...
@@ -100,16 +112,19 @@ void assembler::startif(){
 }
 
 void assembler::endif(){
+	if(error) return;
     addins("LABEL", labelno.getlast());
 }
 
 void assembler::boollhs(const char type){
+	if(error) return;
     std::string F((type == 'f') ? "F" : "");
     addins("POP" + F, memno.getnew());
     boolops[0] = memno.getlast();
 }
 
 void assembler::boolrhs(const std::string& sign, const char type){
+	if(error) return;
     std::string F((type == 'f') ? "F" : "");
     addins("POP" + F, memno.getnew());
     boolops[1] = sign;
@@ -117,11 +132,13 @@ void assembler::boolrhs(const std::string& sign, const char type){
 }
 
 void assembler::call(const std::string& name){
+	if(error) return;
     addins("CALL", t[name]->label);
     addins("POP", memno.getlast());
 }
 
 void assembler::binop(const char op, const std::string& F){
+	if(error) return;
     switch(op){
         case '+':
             addins("ADD" + F, memno.getlast(), memno.getlasti() - 1, memno.getnew());
@@ -140,6 +157,7 @@ void assembler::binop(const char op, const std::string& F){
 }
 
 void assembler::eval(const char type){
+	if(error) return;
     std::string F((type == 'i') ? "" : "F");
     for(const auto& term : expr) {
         if(std::isdigit(term[0]))
@@ -174,6 +192,7 @@ void assembler::assign(const std::string& name){
 }
 
 void assembler::ret(){
+	if(error) return;
     const token *func = t[currentFunc];
     if(isint(func)) addins("PUSH", memno.getlast());
     else addins("PUSHF", memno.getlast());
@@ -181,6 +200,7 @@ void assembler::ret(){
 }
 
 void assembler::funcprologue(const std::string& fname, const std::string& pname){
+	if(error) return;
     const token *func = t[fname];
     const token *param = t[pname]; 
     currentFunc = fname; 
