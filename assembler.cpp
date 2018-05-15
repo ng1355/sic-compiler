@@ -13,8 +13,9 @@ inline void assembler::addins(const Args&... args){
     ins.str(""); 
 }
 
-void assembler::addendifmain(const std::string& name){
-   if(name == "main") end();
+// main doesnt require a return statement so we add one
+void assembler::addretifmain(const std::string& name){
+   if(name == "main") ret();
    else return;
 }
 
@@ -26,7 +27,6 @@ void assembler::addvars(){
 }
 
 void assembler::addvarlist(const std::string& name){
-    if(error) return; 
     varlist.emplace_back(name);
 }
 
@@ -47,15 +47,33 @@ void assembler::read(const char type){
 
 void assembler::writes(const std::string& str){
 	if(error) return;
-    addins("WRITES", "\"",str, "\"");
-    addins("NEWLINE");
+
+    size_t pos = 0;
+    std::string s(str);
+    std::string token;
+    const std::string delimiter("\\n");
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+        if(token.size()){
+            token.insert(0, "\"");
+            token.append("\"");
+            addins("WRITES", token);
+            addins("NEWLINE");
+        }
+        s.erase(0, pos + delimiter.length());
+    }
+    if(s.size()){
+        s.insert(0, "\"");
+        s.append("\"");
+        addins("WRITES", s);
+    }
 }
 
 void assembler::writeExpr(const char type){
 	if(error) return;
     std::string F((type == 'f') ? "F" : "");
+    addins("POP" + F, memno.getnew());
     addins("WRITE" + F, memno.getlast());
-    addins("NEWLINE");
 }
 
 void assembler::branch(const char type){
@@ -63,58 +81,68 @@ void assembler::branch(const char type){
     std::string F((type == 'f') ? "F" : "");
     std::string boolop(boolops[1]);
     if(boolop == "==")
-        addins("JNE" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JNE" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == "!=")
-        addins("JEQ" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JEQ" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == "<")
-        addins("JGE" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JGE" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == ">")
-        addins("JLE" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JLE" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == "<=")
-        addins("JLT" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JGT" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == ">=")
-        addins("JGT" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JLT" + F, boolops[0], boolops[2], labels.top());
 }
 
 void assembler::addelse(const char type){
 	if(error) return;
     std::string F((type == 'f') ? "F" : "");
     std::string boolop(boolops[1]);
-    ++labelno; 
+    labels.emplace(labelno.getnew());
     if(boolop == "==")
-        addins("JEQ" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JEQ" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == "!=")
-        addins("JNE" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JNE" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == "<")
-        addins("JGT" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JLT" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == ">")
-        addins("JGT" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JGT" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == "<=")
-        addins("JLE" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JLE" + F, boolops[0], boolops[2], labels.top());
     else if(boolop == ">=")
-        addins("JGE" + F, boolops[0], boolops[2], labelno.getlast());
+        addins("JGE" + F, boolops[0], boolops[2], labels.top());
 }
 
 void assembler::startloop(){
 	if(error) return;
-	addins("//starting loop");
-    addins("LABEL", labelno.getnew());
+    std::string jmpout(labelno.getnew()); //jumps out of loop
+    std::string loop(labelno.getnew());   //label before loop
+    addins("LABEL", loop);
+    labels.emplace(jmpout);
+    labels.emplace(loop);
+    labels.emplace(jmpout);
 }
 
 void assembler::endloop(){
 	if(error) return;
-    code.pop_back(); // ugly. compensates for endif() 
-    addins("JUMP", labelno.getlasti() - 1);
-    addins("LABEL", labelno.getlast()); // not sure if always true...
+    //code.pop_back(); // ugly. compensates for startif() 
+    addins("JUMP", labels.top());
+    labels.pop();
+    addins("LABEL", labels.top()); // not sure if always true...
+    labels.pop();
 }
 
+void assembler::cleanloop(){ if(error) return; labels.pop(); } 
+
 void assembler::startif(){
-    ++labelno; 
+    if(error) return;
+    labels.emplace(labelno.getnew());
 }
 
 void assembler::endif(){
 	if(error) return;
-    addins("LABEL", labelno.getlast());
+    addins("LABEL", labels.top());
+    labels.pop();
 }
 
 void assembler::boollhs(const char type){
@@ -174,7 +202,11 @@ void assembler::eval(const char type){
     expr.clear();
 }
 
-void assembler::addterm(const std::string& term){
+void assembler::addterm(const std::string& term, const char type){
+    if(type == 's'){
+        usevar(term);
+    }
+    if(error) return;
     expr.emplace_back(term);
 }
 
@@ -188,6 +220,7 @@ inline bool assembler::isint(const token *tok){
 
 void assembler::assign(const std::string& name){
     if(error) return; 
+    usevar(name);
     const token *var = t[name];
     addins("POP", var->label);
 }
@@ -205,7 +238,7 @@ void assembler::funcprologue(const std::string& fname, const std::string& pname)
     const token *func = t[fname];
     const token *param = t[pname]; 
     currentFunc = fname; 
-    addins("label", func->label);
+    addins("LABEL", func->label);
     // main is an exception and doesn't pop an argument
     if(fname != "main") addins("POP", param->label);
 }
@@ -213,7 +246,7 @@ void assembler::funcprologue(const std::string& fname, const std::string& pname)
 void assembler::bindmain() {
     const token *massmain = t["main"];
     if(massmain){ 
-        code[0] = "START " + massmain->label + '\n';
+        code[2] += massmain->label + "\n"; 
         return; 
     }
     t.printError(NO_MAIN); 
@@ -226,6 +259,8 @@ void assembler::end() {
 }
 
 void assembler::printcode() const {
+    if(error) return;
+    std::cout << "Code:\n"; 
     for(const auto& s : code) std::cout << s; 
 }
 
@@ -241,7 +276,7 @@ void assembler::outputcode() {
 }
 
 void assembler::error_encountered(const char *what) {
-    std::cerr << "Assembler error: " << what << '\n';
+    if(debug) std::cerr << "Assembler error: " << what << '\n';
     error = true;
 }
 
@@ -266,7 +301,11 @@ bool assembler::addvar(const std::string& name){
     return true; 
 }
 
-bool assembler::usevar(const std::string& name) { return t.usevar(name); } 
+bool assembler::usevar(const std::string& name) { 
+    bool success = t.usevar(name); 
+    if(!success) error_encountered("usevar");
+    return success;
+}
 
 /* associates function with label */ 
 bool assembler::addfunc(const std::string& name, 

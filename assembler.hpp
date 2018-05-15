@@ -11,6 +11,7 @@
 #include <fstream> 
 #include <sstream> 
 #include <array>
+#include <stack>
 
 class assembler {
 public:
@@ -24,6 +25,7 @@ public:
 
     void startloop(); 
     void endloop(); 
+    void cleanloop();
     void startif();
     void endif();
     void branch(const char type);
@@ -39,14 +41,14 @@ public:
     void ret();
     void funcprologue(const std::string& fname, const std::string& pname);
     void bindmain();
-    void addendifmain(const std::string& name);
+    void addretifmain(const std::string& name);
     void end(); 
 
     void addvars(); 
     void addvarlist(const std::string& name);
     void clearvarlist(); 
 
-    void addterm(const std::string&);
+    void addterm(const std::string&, const char type = 0);
     void clearexpr();
 
     // functions to interface with the symbol table 
@@ -74,11 +76,16 @@ private:
     labler memno;   // for variables
     labler labelno; // for functions 
     symbol_table t; 
-    // dummy instruction to be replaced by main in bindmain() 
-    std::vector<std::string> code = { "DUMMY\n" };
+    // CALL is determined in bindmain()
+    std::vector<std::string> code = { "START 0\n",
+                                      "LABEL 0\n",
+                                      "CALL ",
+                                      "STOP\n" };
     std::stringstream ins; 
     std::string currentFunc; 
     std::vector<std::string> varlist;
     std::vector<std::string> expr; 
     std::array<std::string, 3> boolops; 
+    std::stack<std::string> labels; 
+    bool debug = false; 
 };

@@ -68,7 +68,6 @@
 
 program1: program { 
         mass.bindmain();
-        printf("EOF\nCode:\n");
         mass.printcode(); 
         mass.outputcode();
 }
@@ -86,7 +85,7 @@ kind: "int" { mass.decl_type($1); }
 | "float" { mass.decl_type($1); }
 ;
 
-var-list: ID var-list-opt { mass.addvarlist($1); } 
+var-list: ID { mass.addvarlist($1); } var-list-opt 
 ;
 
 var-list-opt: %empty
@@ -112,7 +111,7 @@ function-def: kind ID LPAR kind ID RPAR
 	ilist.clear();
 	flist.clear();
 }
-body { mass.addendifmain($<sval>2); mass.exitScope(); } 
+body {  mass.addretifmain($<sval>2);  mass.exitScope(); } 
 ;
 
 body: LBRACE body-decl body-stmt RBRACE
@@ -127,13 +126,27 @@ body-stmt: %empty
 ;
 
 stmt: expr SEMICOLON
-| "if" LPAR bool-expr RPAR stmt "else" { mass.endif(); mass.addelse(expr_type); } stmt {mass.endif();}
-| "if" LPAR bool-expr RPAR stmt {mass.endif();}
-| "while" { mass.startloop(); } LPAR bool-expr RPAR stmt { mass.endloop(); }
+| "if" { mass.startif(); } LPAR bool-expr RPAR stmt opt-else
+| "while" { mass.startloop(); } LPAR bool-expr RPAR { mass.cleanloop(); } stmt { mass.endloop(); }
 | "read" { mass.clearvarlist(); }  var-list SEMICOLON { mass.read(expr_type); }
 | "write" write-expr-list SEMICOLON
 | "return" expr SEMICOLON { return_check(); mass.ret(); }
 | LBRACE opt-stmt RBRACE
+;
+
+opt-else: %empty { mass.endif(); } 
+| "else" { mass.endif(); mass.addelse(expr_type); } stmt { mass.endif(); }
+;
+
+bool-expr: expr { mass.boollhs(expr_type); } bool-op expr
+	{
+		boolean_check(vlist,ilist,flist);
+		vlist.clear();
+		ilist.clear();
+		flist.clear();	
+        mass.boolrhs($<op>3, expr_type); 
+        mass.branch(expr_type);
+	}
 ;
 
 opt-stmt: %empty
@@ -176,18 +189,6 @@ factor: ID
 | LPAR expr RPAR {current_factor = 0; } 
 ;
 
-bool-expr: expr { mass.boollhs(expr_type); } bool-op expr
-	{
-		boolean_check(vlist,ilist,flist);
-		vlist.clear();
-		ilist.clear();
-		flist.clear();	
-        mass.startif(); 
-        mass.boolrhs($<op>3, expr_type); 
-        mass.branch(expr_type);
-	}
-;
-
 function-call: ID LPAR expr RPAR 
 	{ 
 		mass.callfunc($1);
@@ -212,8 +213,7 @@ function-call: ID LPAR expr RPAR
 term: addop factor 
     { 
         if(current_factor == 's'){ 
-            mass.usevar($<sval>2); 
-            mass.addterm($<sval>2);
+            mass.addterm($<sval>2, current_factor); 
         }
         else if(current_factor == 'i'){
             mass.addterm(std::to_string($<ival>2));
@@ -227,8 +227,7 @@ term: addop factor
 | factor 
     { 
     if(current_factor == 's'){ 
-        mass.addterm($<sval>1);
-        mass.usevar($<sval>1); 
+        mass.addterm($<sval>1, current_factor);
       }
     else if(current_factor == 'i'){
         mass.addterm(std::to_string($<ival>1));
@@ -243,8 +242,7 @@ term-mulop: %empty
 | term-mulop mulop addop factor 
     { 
     if(current_factor == 's'){
-        mass.usevar($<sval>4); 
-        mass.addterm($<sval>4);
+        mass.addterm($<sval>4, current_factor);
     }
     else if(current_factor == 'i'){
         mass.addterm(std::to_string($<ival>4));
@@ -259,10 +257,8 @@ term-mulop: %empty
 
 | term-mulop mulop factor 
     { 
-    puts("\nterm-mulop");
     if(current_factor == 's'){
-        mass.usevar($<sval>3); 
-        mass.addterm($<sval>2);
+        mass.addterm($<sval>3, current_factor); 
     }
     else if(current_factor == 'i'){
         mass.addterm(std::to_string($<ival>3));
@@ -303,7 +299,6 @@ bool-op: OP_LT
 /* t = tn */ 
 expr: ID OP_ASSIGN expr 
 	{ 
-		mass.usevar($1);
 		for(int i = 0; i < vlist.size(); i++)
 			operation_check($1,vlist[i]);
 		for(int i = 0; i < ilist.size(); i++)

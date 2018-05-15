@@ -97,12 +97,18 @@ bool symbol_table::addfunc( const std::string& name,
         global.emplace(name, token{current_type, name, line_no, 
                 label, true, param, defined});
     if(!added) { 
+        if(it->second.type != current_type || it->second.param != param){
+            printError(FUNC_REDECL, it->second); return false; 
+        }
+        else if(defined) it->second.defined = true; 
+        /*
         if(it->second.defined){
             printError(FUNC_REDEF, it->second); return false; } 
         else if(defined){
             it->second.defined = true;
         } else {
             printError(FUNC_REDECL, it->second); return false; } 
+        */
     }
     else if(defined) printStatus(FUNC_DEF, it->second);
     else printStatus(FUNC_DECL, it->second);

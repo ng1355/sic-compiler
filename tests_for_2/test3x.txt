@@ -15,7 +15,7 @@ int main(int dummy)
  
   c = 31;
 
-  while (c > 0)
+  while (c >= 0)
   {
     /* k = n >> c;  there is no >> in our language; so we try to fake it */
     k = n / power2(c);
@@ -23,12 +23,9 @@ int main(int dummy)
     if (k > 0)
       write "1";
     else
-      write("0");
-
-      c = c-1;
+      write "0";
+    c = c-1;
   }
- 
-  write "\n";
  
   return 0;
 }
@@ -46,7 +43,7 @@ int power2 (int power) /* compute 2 rased to power POWER; assumes POWER>=0 */
   result = 1;
 
   /* is there a one-off error here? I hope not */
-  while (count<c)
+  while (count<power)
     {
       result = result * 2;
       count = count + 1;

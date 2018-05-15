@@ -4,7 +4,7 @@ int main()
 {
   int n, c, k;
  
-  s = "Enter an integer in decimal number system" ;
+  s = "Enter an integer in decimal number system" ; 
  
   while(c>=0)
   {
